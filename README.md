@@ -67,23 +67,6 @@ python main.py
 
 By default, the server will run on port 8080.
 
-## Available Tools
-
-This MCP server provides the following tools:
-
-1. `get_instructions`: Fetches implementation instructions for specific Kantan CMS features
-   - Parameter: `category_name` - The path to the specific feature instructions
-   - Example: "collections", "forms", "api_keys"
-
-2. `get_toc`: Fetches the table of contents for Kantan CMS API documentation
-   - No parameters required
-
-3. `get_instruction_for_builing`: Fetches markdown instructions for creating a build file for Kantan CMS
-   - No parameters required
-
-4. `get_instruction_for_form_integartion`: Fetches markdown instructions for integrating forms with Kantan CMS
-   - No parameters required
-
 ## Using the MCP Server
 
 Once the server is configured and running, you can use its tools with your AI assistant:
