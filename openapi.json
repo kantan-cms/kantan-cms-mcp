@@ -1,0 +1,1236 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Kantan CMS API",
+    "description": "API for Kantan CMS - A simple and easy-to-use content management system",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Kantan CMS Support",
+      "email": "support@kantancms.com",
+      "url": "https://kantancms.com/support"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.kantancms.com/v1",
+      "description": "Production server"
+    },
+    {
+      "url": "https://staging-api.kantancms.com/v1",
+      "description": "Staging server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "collections",
+      "description": "Operations related to content collections"
+    },
+    {
+      "name": "records",
+      "description": "Operations related to content records"
+    },
+    {
+      "name": "forms",
+      "description": "Operations related to forms and form submissions"
+    },
+    {
+      "name": "api_keys",
+      "description": "Operations related to API key management"
+    },
+    {
+      "name": "hosting",
+      "description": "Operations related to hosting and deployment"
+    }
+  ],
+  "paths": {
+    "/api/collections": {
+      "get": {
+        "tags": ["collections"],
+        "summary": "List all collections",
+        "description": "Returns a list of all collections in the CMS",
+        "operationId": "listCollections",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of collections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Collection"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["collections"],
+        "summary": "Create a new collection",
+        "description": "Creates a new collection in the CMS",
+        "operationId": "createCollection",
+        "requestBody": {
+          "description": "Collection to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Collection created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Collection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/collections/{collectionId}": {
+      "get": {
+        "tags": ["collections"],
+        "summary": "Get a collection by ID",
+        "description": "Returns a single collection by ID",
+        "operationId": "getCollection",
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "description": "ID of the collection to retrieve",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collection found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Collection"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Collection not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": ["collections"],
+        "summary": "Update a collection",
+        "description": "Updates an existing collection",
+        "operationId": "updateCollection",
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "description": "ID of the collection to update",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Updated collection data",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Collection updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Collection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Collection not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["collections"],
+        "summary": "Delete a collection",
+        "description": "Deletes a collection by ID",
+        "operationId": "deleteCollection",
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "description": "ID of the collection to delete",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Collection deleted successfully"
+          },
+          "404": {
+            "description": "Collection not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/records/{collectionId}": {
+      "get": {
+        "tags": ["records"],
+        "summary": "List records in a collection",
+        "description": "Returns a list of records from a specific collection",
+        "operationId": "listRecords",
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "description": "ID of the collection to retrieve records from",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Field to sort by",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "description": "Sort order (asc or desc)",
+            "schema": {
+              "type": "string",
+              "enum": ["asc", "desc"],
+              "default": "asc"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "description": "Filter criteria in JSON format",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Record"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Collection not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["records"],
+        "summary": "Create a new record",
+        "description": "Creates a new record in a collection",
+        "operationId": "createRecord",
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "description": "ID of the collection to create a record in",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Record data to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Record created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Record"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Collection not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/records/{collectionId}/{recordId}": {
+      "get": {
+        "tags": ["records"],
+        "summary": "Get a record by ID",
+        "description": "Returns a single record by ID from a specific collection",
+        "operationId": "getRecord",
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "description": "ID of the collection the record belongs to",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recordId",
+            "in": "path",
+            "description": "ID of the record to retrieve",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Record found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Record"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Record or collection not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": ["records"],
+        "summary": "Update a record",
+        "description": "Updates an existing record in a collection",
+        "operationId": "updateRecord",
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "description": "ID of the collection the record belongs to",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recordId",
+            "in": "path",
+            "description": "ID of the record to update",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Updated record data",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Record updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Record"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Record or collection not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["records"],
+        "summary": "Delete a record",
+        "description": "Deletes a record by ID from a specific collection",
+        "operationId": "deleteRecord",
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "path",
+            "description": "ID of the collection the record belongs to",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recordId",
+            "in": "path",
+            "description": "ID of the record to delete",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Record deleted successfully"
+          },
+          "404": {
+            "description": "Record or collection not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/forms": {
+      "get": {
+        "tags": ["forms"],
+        "summary": "List all forms",
+        "description": "Returns a list of all forms in the CMS",
+        "operationId": "listForms",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of forms",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Form"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["forms"],
+        "summary": "Create a new form",
+        "description": "Creates a new form in the CMS",
+        "operationId": "createForm",
+        "requestBody": {
+          "description": "Form to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FormInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Form created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Form"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/forms/{formId}": {
+      "get": {
+        "tags": ["forms"],
+        "summary": "Get a form by ID",
+        "description": "Returns a single form by ID",
+        "operationId": "getForm",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "description": "ID of the form to retrieve",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Form found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Form"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Form not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": ["forms"],
+        "summary": "Update a form",
+        "description": "Updates an existing form",
+        "operationId": "updateForm",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "description": "ID of the form to update",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Updated form data",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FormInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Form updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Form"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Form not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["forms"],
+        "summary": "Delete a form",
+        "description": "Deletes a form by ID",
+        "operationId": "deleteForm",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "description": "ID of the form to delete",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Form deleted successfully"
+          },
+          "404": {
+            "description": "Form not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/forms/{formId}/submissions": {
+      "get": {
+        "tags": ["forms"],
+        "summary": "List form submissions",
+        "description": "Returns a list of submissions for a specific form",
+        "operationId": "listFormSubmissions",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "description": "ID of the form to retrieve submissions for",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of form submissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/FormSubmission"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Form not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["forms"],
+        "summary": "Submit a form",
+        "description": "Creates a new form submission",
+        "operationId": "submitForm",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "description": "ID of the form to submit",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Form submission data",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FormSubmissionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Form submitted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormSubmission"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Form not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/api_keys": {
+      "get": {
+        "tags": ["api_keys"],
+        "summary": "List all API keys",
+        "description": "Returns a list of all API keys for the current user",
+        "operationId": "listApiKeys",
+        "responses": {
+          "200": {
+            "description": "A list of API keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKey"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["api_keys"],
+        "summary": "Create a new API key",
+        "description": "Creates a new API key for the current user",
+        "operationId": "createApiKey",
+        "requestBody": {
+          "description": "API key to create",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "API key created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
