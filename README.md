@@ -1,68 +1,109 @@
-# Kantan CMS MCP Server
+# Kantan CMS MCP Tools
 
-This MCP server provides tools to fetch documentation and implementation instructions for Kantan CMS, a simple and easy-to-use content management system.
+This repository contains MCP (Model Context Protocol) tools for interacting with the Kantan CMS API.
 
-## What is this MCP Server?
+## Setup
 
-The Kantan CMS MCP server is a Model Context Protocol (MCP) server that connects to the Kantan CMS API to fetch documentation and implementation instructions. It allows AI assistants to access up-to-date information about Kantan CMS features and how to implement them.
+1. Clone this repository
+2. Install the dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+3. Set the required environment variables:
+   ```
+   export PROJECT_ID=your_project_id
+   export CMS_API_KEY=your_api_key
+   ```
+4. Run the MCP server:
+   ```
+   python main.py
+   ```
 
-## Dependencies
+## Available Tools
 
-This MCP server requires the following dependencies:
+### Documentation Tools
 
-```bash
-fastmcp==2.3.0
-requests==2.31.0
+- `get_category_api(category_name)`: Get API information on how to implement a specific feature in Kantan CMS.
+- `get_toc()`: Get the table of contents for Kantan CMS API documentation.
+- `get_instruction_for_building()`: Get the markdown instructions for creating a build file for Kantan CMS.
+- `get_instruction_for_form_integartion()`: Get the markdown instructions for integrating forms with Kantan CMS.
+- `create_env_file_content()`: Create content for .env file at Kantan CMS integration.
+- `download_and_unzip_builder_script(root_path, lang)`: Download and unzip the builder script for Kantan CMS.
+
+### API Client Tools
+
+#### Collections API
+
+- `list_collections(page_size, page_num, resp)`: List collections in the project.
+- `count_collections()`: Count collections in the project.
+- `get_collection(collection_id)`: Get a collection by ID.
+
+#### Records API
+
+- `list_records(collection_id, page_size, page_num)`: List records in a collection.
+- `get_record(collection_id, record_id)`: Get a record by ID.
+- `count_records(collection_id)`: Count records in a collection.
+
+#### API Keys API
+
+- `validate_api_key()`: Validate the current API key.
+
+#### Schemas API
+
+- `get_schema_type(collection_id)`: Get the schema type structure for a collection.
+
+## Example Usage
+
+```python
+# List all collections
+collections = list_collections()
+print(collections)
+
+# Get a specific collection
+collection = get_collection("collection_id")
+print(collection)
+
+# List records in a collection
+records = list_records("collection_id")
+print(records)
+
+# Get a specific record
+record = get_record("collection_id", "record_id")
+print(record)
+
+# Validate API key
+validation = validate_api_key()
+print(validation)
+
+# Get schema type for a collection
+schema = get_schema_type("collection_id")
+print(schema)
 ```
 
-You can install these dependencies using pip:
+## API Client
 
-```bash
-pip install -r requirements.txt
+The API client is implemented in `api_client.py` and provides a Python interface to the Kantan CMS API. It handles authentication, request formatting, and response parsing.
+
+### KantanCMSApiClient
+
+```python
+from api_client import KantanCMSApiClient
+
+# Create a client
+client = KantanCMSApiClient()
+
+# List collections
+collections = client.list_collections()
+print(collections)
+
+# Get a collection
+collection = client.get_collection("collection_id")
+print(collection)
 ```
 
-## Configuration
+## Environment Variables
 
-### Environment Variables
+- `PROJECT_ID`: Your Kantan CMS project ID.
+- `CMS_API_KEY`: Your Kantan CMS API key.
 
-The Kantan CMS MCP server uses the following environment variables:
-
-- `PROJECT_ID`: Your Kantan CMS project ID, which will be sent as the `X-Project-Id` header in API requests
-- `CMS_API_KEY`: Your Kantan CMS API key, which will be sent as the `X-API-Key` header in API requests
-
-### MCP Configuration
-
-To make this MCP server available to your AI assistant, add it to your `.mcp.json` file in your home directory:
-
-```json
-{
-  "servers": [
-    {
-      "name": "kantan-cms-tools",
-      "command": ["python", "/path/to/kantan-cms-mcp/main.py"],
-      "auto_start": true,
-      "env": {
-        "PROJECT_ID": "your-project-id",
-        "CMS_API_KEY": "your-api-key"
-      }
-    }
-  ]
-}
-```
-
-Configuration options:
-
-- `name`: A unique identifier for the server (e.g., "kantan-cms-tools")
-- `command`: The command to start the server (adjust the path to where you've cloned this repository)
-- `auto_start`: Whether to automatically start the server when your AI assistant is launched
-- `env`: Environment variables for the server process (your Kantan CMS credentials)
-
-## Running the Server
-
-To run the server manually:
-
-```bash
-python main.py
-```
-
-By default, the server will run on port 8080.
+These environment variables are required for authentication with the Kantan CMS API.
