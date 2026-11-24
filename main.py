@@ -1,33 +1,25 @@
-import os
+"""Entrypoint: start the operator-provisioning MCP server.
+
+Required env (the operator account + target backend):
+  CMS_BASE_URL              e.g. https://api.kantan-cms.dev
+  SUPABASE_URL              the project's Supabase URL
+  SUPABASE_ANON_KEY         the Supabase anon key
+  KANTAN_OPERATOR_EMAIL     the operator account's email
+  KANTAN_OPERATOR_PASSWORD  the operator account's password
+
+Credentials are validated lazily on the first tool call (so the server can
+start and advertise its tools without them), but we check them up front here to
+fail fast when run directly.
+"""
 from kantan_cms_mcp import mcp
-
-
-def get_env_vars() -> tuple[str, str]:
-    """Get the value of an environment variable."""
-    project_id = os.environ.get("PROJECT_ID")
-    api_key = os.environ.get("CMS_API_KEY")
-    return project_id, api_key
-
-
-def validate_env_vars(project_id: str, api_key: str) -> bool:
-    """Validate the environment variables."""
-    if not project_id:
-        raise ValueError("PROJECT_ID environment variable is not set.")
-    if not api_key:
-        raise ValueError("CMS_API_KEY environment variable is not set.")
-    return True
-
+from kantan_cms_mcp.config import load_config
 
 if __name__ == "__main__":
     try:
-        # Validate environment variables
-        project_id, api_key = get_env_vars()
-        validate_env_vars(project_id, api_key)
-        print("Environment variables validated successfully.")
-        
-        # Run the MCP server
-        mcp.run()
+        load_config()
+        print("Operator credentials present; starting MCP server.")
     except ValueError as e:
         print(f"Error: {e}")
         print("MCP server startup aborted due to missing environment variables.")
-        exit(1)
+        raise SystemExit(1)
+    mcp.run()
