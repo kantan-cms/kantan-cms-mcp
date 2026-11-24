@@ -26,3 +26,21 @@ class KantanApi(Protocol):
     def invite_tenant_member(self, tenant_id: str, email: str, role: str) -> None:
         """Invite a user to a tenant with a role (they must accept)."""
         ...
+
+    def generate_baker_instruction(
+        self, project_id: str, title: str, description: str | None
+    ) -> dict:
+        """Turn a title + brief into a web-baker instruction."""
+        ...
+
+    def create_web_baker(self, project_id: str, instruction: dict) -> str:
+        """Create a web_baker row for the project. Returns its id."""
+        ...
+
+    def run_web_baker(self, project_id: str, web_baker_id: str, version: str = "v2") -> None:
+        """Kick off generation (needs the project to have a subscribed tenant)."""
+        ...
+
+    def get_web_baker_status(self, web_baker_id: str) -> str:
+        """Current status: new|navigate|running|baking|done|policy|error|failed."""
+        ...

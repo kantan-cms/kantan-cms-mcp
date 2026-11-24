@@ -27,10 +27,19 @@ tool for relocating an existing project between tenants.)
 ## Tools
 
 - `read_lead_clients(path)` — parse an `.xlsx` into rows (review before creating).
-- `provision_lead_client(name, project_name?, description?, client_email?)` — one lead.
+- `provision_lead_client(name, project_name?, description?, client_email?, external_key?)` — one lead (tenant + project, no generation).
 - `provision_from_excel(path)` — every row; one result each, failures isolated.
+- `provision_and_generate(name, brief, project_name?, description?, external_key?)` — provision **and** generate the site: build + generate in your (subscribed) tenant, then move the finished project into the lead's tenant. Blocks until generation finishes (minutes) or times out; resumable.
 - `move_project(project_id, destination_tenant_id)` — relocate a project (backend enforces the rules).
 - `hand_over_client(tenant_id, client_email, role="owner")` — invite the client.
+
+### Why generation builds in *your* tenant
+
+A brand-new lead tenant has no subscription, so it can't run the generator
+(`no active subscription`). `provision_and_generate` therefore creates + generates
+the project in the **operator's** subscribed tenant (billing the build to you)
+and then **moves** the finished project into the lead's tenant via the
+owner-gated, single-member move.
 
 ## Architecture (mirrors the backend)
 
@@ -77,9 +86,10 @@ override with `KANTAN_MCP_LEDGER`.
 
 ## Known follow-ups
 
-- **Content seeding / site generation** (collections, records, web-baker run) as
-  further provisioning steps.
+- **Content seeding** (create collections/records from the brief or sheet) before
+  generation, for richer sites.
 - Not runtime-tested against live credentials yet — smoke-test the operator
-  sign-in + a single `provision_lead_client` before batch use.
+  sign-in + a single `provision_lead_client`, then one `provision_and_generate`,
+  before batch use. Generation consumes the operator's AI credits.
 
 The previous API-key content MCP is preserved under [`archive/`](archive/).
