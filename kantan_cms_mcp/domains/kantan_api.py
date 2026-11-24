@@ -11,9 +11,12 @@ class KantanApi(Protocol):
         """Create a tenant (the operator becomes its owner). Returns tenant_id."""
         ...
 
-    def create_project(self, name: str, description: str | None = None) -> dict:
-        """Create a project. NOTE: the backend places it in the operator's
-        default tenant; callers move it with move_project. Returns {id, tenant_id}."""
+    def create_project(
+        self, name: str, description: str | None = None, tenant_id: str | None = None
+    ) -> dict:
+        """Create a project. With tenant_id, create it directly in that tenant
+        (the caller must own it); without, the operator's default tenant.
+        Returns {id, tenant_id, ...}."""
         ...
 
     def move_project(self, project_id: str, destination_tenant_id: str) -> dict:

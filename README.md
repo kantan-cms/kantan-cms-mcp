@@ -16,11 +16,13 @@ surface (`/v1/app`). Because **creating a tenant makes the caller its owner**,
 every tenant the operator creates is already owned by the operator — no special
 "attach my account" step is needed.
 
-Provisioning composes existing endpoints: `create tenant` → `create project` →
-`move project` into the new tenant (the backend's create-project lands a project
-in the operator's default tenant, so we relocate it with the owner-gated,
-single-member move). Handover invites the client, who accepts and is then an
-owner.
+Provisioning is a clean one-hop: `create tenant` → `create project` **in that
+tenant** (the backend's create-project takes an optional owner-gated
+`tenant_id`). It is **idempotent/resumable** via a local JSON ledger keyed by
+each lead's `external_key` (else name): re-runs skip finished leads and resume
+partial ones, so a batch never duplicates tenants. Handover invites the client,
+who accepts and is then an owner. (`move_project` remains available as its own
+tool for relocating an existing project between tenants.)
 
 ## Tools
 
@@ -70,12 +72,11 @@ MCP client config:
 }
 ```
 
+The ledger file defaults to `kantan_mcp_ledger.json` in the working directory;
+override with `KANTAN_MCP_LEDGER`.
+
 ## Known follow-ups
 
-- **Idempotency:** re-running provisioning currently re-creates tenants. Planned:
-  dedupe by `external_key` (or a tenant-name lookup) so batches are resumable.
-- **Direct tenant-scoped project creation:** add an optional `tenant_id` to the
-  backend create-project so we can skip the create-then-move hop.
 - **Content seeding / site generation** (collections, records, web-baker run) as
   further provisioning steps.
 - Not runtime-tested against live credentials yet — smoke-test the operator

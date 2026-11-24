@@ -48,9 +48,13 @@ class KantanHttpClient:
         resp = self._request("POST", "/tenant", json={"tenant": {"name": name}})
         return resp.json()["tenant_id"]
 
-    def create_project(self, name: str, description: str | None = None) -> dict:
-        body = {"project": {"name": name, "description": description}}
-        return self._request("POST", "/project", json=body).json()
+    def create_project(
+        self, name: str, description: str | None = None, tenant_id: str | None = None
+    ) -> dict:
+        project: dict = {"name": name, "description": description}
+        if tenant_id:
+            project["tenant_id"] = tenant_id
+        return self._request("POST", "/project", json={"project": project}).json()
 
     def move_project(self, project_id: str, destination_tenant_id: str) -> dict:
         return self._request(

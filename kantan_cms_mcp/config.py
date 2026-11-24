@@ -13,6 +13,8 @@ class Config:
     supabase_anon_key: str
     operator_email: str
     operator_password: str
+    # Idempotency ledger file (local). Override with KANTAN_MCP_LEDGER.
+    ledger_path: str = "kantan_mcp_ledger.json"
 
     @property
     def app_base(self) -> str:
@@ -39,4 +41,5 @@ def load_config() -> Config:
         supabase_anon_key=os.environ["SUPABASE_ANON_KEY"],
         operator_email=os.environ["KANTAN_OPERATOR_EMAIL"],
         operator_password=os.environ["KANTAN_OPERATOR_PASSWORD"],
+        ledger_path=os.environ.get("KANTAN_MCP_LEDGER", "kantan_mcp_ledger.json"),
     )
