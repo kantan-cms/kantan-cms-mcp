@@ -44,3 +44,30 @@ class KantanApi(Protocol):
     def get_web_baker_status(self, web_baker_id: str) -> str:
         """Current status: new|navigate|running|baking|done|policy|error|failed."""
         ...
+
+    # --- website source download / repository upload -------------------------
+    def latest_web_baker_id(self, project_id: str) -> str | None:
+        """The project's most recent web_baker row id (or None if it has none)."""
+        ...
+
+    def download_website_zip(self, project_id: str, web_baker_id: str) -> bytes:
+        """Fetch the generated-website SOURCE (website.zip) as raw bytes."""
+        ...
+
+    def overwrite_website_zip(
+        self, project_id: str, web_baker_id: str, zip_bytes: bytes
+    ) -> None:
+        """Replace the project's source website.zip (what a rebuild reads)."""
+        ...
+
+    def upload_repository_zip(
+        self, project_id: str, name: str, zip_bytes: bytes
+    ) -> None:
+        """Upload a zip bundle into the project's Repository store under `name`
+        (requires the Repository app to be active)."""
+        ...
+
+    def import_website_to_repository(self, project_id: str, name: str) -> dict:
+        """Server-side copy of the generated website.zip into the Repository store
+        under `name` (no local download; requires the Repository app)."""
+        ...
