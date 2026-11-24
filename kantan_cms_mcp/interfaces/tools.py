@@ -21,11 +21,17 @@ from kantan_cms_mcp.config import load_config
 from kantan_cms_mcp.domains.entities import LeadClient
 from kantan_cms_mcp.infras.excel_reader import read_lead_clients as _read_leads
 from kantan_cms_mcp.infras.kantan_http_client import KantanHttpClient
+from kantan_cms_mcp.infras.ledger import Ledger
 
 
 @lru_cache(maxsize=1)
 def _client() -> KantanHttpClient:
     return KantanHttpClient(load_config())
+
+
+@lru_cache(maxsize=1)
+def _ledger() -> Ledger:
+    return Ledger(load_config().ledger_path)
 
 
 def register_tools(mcp: FastMCP) -> None:
@@ -41,23 +47,27 @@ def register_tools(mcp: FastMCP) -> None:
         project_name: str | None = None,
         description: str | None = None,
         client_email: str | None = None,
+        external_key: str | None = None,
     ) -> dict:
-        """Provision ONE lead client: create a tenant (you become owner), create
-        the project, and move it into the new tenant. Returns the tenant/project
-        ids (or an error detail)."""
+        """Provision ONE lead client: create a tenant (you become owner) and the
+        project inside it. Idempotent — pass a stable external_key (else the name
+        is used) so re-runs skip/resume instead of duplicating. Returns the
+        tenant/project ids (or an error detail)."""
         lead = LeadClient(
             name=name,
             project_name=project_name,
             description=description,
             client_email=client_email,
+            external_key=external_key,
         )
-        return asdict(ProvisionLeadClientUseCase(_client()).execute(lead))
+        return asdict(ProvisionLeadClientUseCase(_client(), _ledger()).execute(lead))
 
     @mcp.tool()
     def provision_from_excel(path: str) -> list[dict]:
-        """Provision every row of a lead spreadsheet. Returns one result per row;
-        a failed row does not stop the others."""
-        results = ProvisionFromExcelUseCase(_client()).execute(path)
+        """Provision every row of a lead spreadsheet. One result per row; a failed
+        row doesn't stop the others. Idempotent/resumable via the ledger, so
+        re-running a sheet skips rows already provisioned."""
+        results = ProvisionFromExcelUseCase(_client(), _ledger()).execute(path)
         return [asdict(r) for r in results]
 
     @mcp.tool()
