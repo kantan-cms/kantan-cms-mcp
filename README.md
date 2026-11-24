@@ -48,7 +48,7 @@ kantan_cms_mcp/
   interfaces/tools.py          MCP tools (entrypoints; like views)
   applications/use_cases/      orchestration (provision, hand_over, move, batch)
   domains/                     entities + the KantanApi port
-  infras/                      HTTP client (Supabase auth + /v1/app) + Excel reader
+  infras/                      HTTP client (Supabase REST auth + PostgREST + /v1/app; httpx only) + Excel reader
 ```
 
 ## Run

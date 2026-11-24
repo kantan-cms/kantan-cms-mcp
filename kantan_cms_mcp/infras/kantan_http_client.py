@@ -1,34 +1,86 @@
-"""Concrete KantanApi: authenticates as the operator via Supabase and calls the
-backend's user-JWT surface (/v1/app). One instance per MCP process."""
+"""Concrete KantanApi: authenticates as the operator against Supabase's REST
+auth API (GoTrue) and calls the backend's user-JWT surface (/v1/app). The few
+direct `web_baker` reads/writes go through Supabase's REST database API
+(PostgREST) with the operator's token (RLS limits rows to ones it owns). One
+instance per MCP process; no Supabase Python SDK — just httpx."""
 from __future__ import annotations
 
 import base64
 
 import httpx
-from supabase import create_client
 
 from kantan_cms_mcp.config import Config
 
 ZIP_CONTENT_TYPE = "application/zip"
 
 
+def _auth_error(resp: httpx.Response) -> str:
+    """Best-effort error text from a GoTrue response — never the password."""
+    try:
+        data = resp.json()
+    except ValueError:
+        return f"HTTP {resp.status_code}"
+    for key in ("error_description", "msg", "message", "error"):
+        val = data.get(key)
+        if val:
+            return str(val)
+    return f"HTTP {resp.status_code}"
+
+
 class KantanHttpClient:
     def __init__(self, config: Config):
         self._config = config
-        self._supabase = create_client(config.supabase_url, config.supabase_anon_key)
+        base = config.supabase_url.rstrip("/")
+        self._anon_key = config.supabase_anon_key
+        # Backend user-JWT surface (/v1/app).
         self._http = httpx.Client(base_url=config.app_base, timeout=60.0)
+        # Supabase GoTrue auth + PostgREST database, same host, different prefix.
+        self._auth = httpx.Client(base_url=f"{base}/auth/v1", timeout=30.0)
+        self._db = httpx.Client(base_url=f"{base}/rest/v1", timeout=60.0)
+        self._access_token: str | None = None
+        self._refresh_token: str | None = None
+        self._expires_in: int | None = None
         self._sign_in()
 
     # --- auth -----------------------------------------------------------------
+    def _store_session(self, data: dict) -> None:
+        self._access_token = data["access_token"]
+        self._refresh_token = data.get("refresh_token")
+        self._expires_in = data.get("expires_in")
+
     def _sign_in(self) -> None:
-        res = self._supabase.auth.sign_in_with_password(
-            {"email": self._config.operator_email, "password": self._config.operator_password}
+        resp = self._auth.post(
+            "/token",
+            params={"grant_type": "password"},
+            headers={"apikey": self._anon_key},
+            json={
+                "email": self._config.operator_email,
+                "password": self._config.operator_password,
+            },
         )
-        if not res.session:
-            raise RuntimeError("Operator sign-in failed")
-        self._access_token = res.session.access_token
-        # Make direct DB reads/writes (web_baker) run as the operator (RLS).
-        self._supabase.postgrest.auth(self._access_token)
+        if resp.status_code != 200 or "access_token" not in (resp.json() or {}):
+            raise RuntimeError(f"Operator sign-in failed: {_auth_error(resp)}")
+        self._store_session(resp.json())
+
+    def _refresh(self) -> bool:
+        """Refresh the access token; return False if it didn't work."""
+        if not self._refresh_token:
+            return False
+        resp = self._auth.post(
+            "/token",
+            params={"grant_type": "refresh_token"},
+            headers={"apikey": self._anon_key},
+            json={"refresh_token": self._refresh_token},
+        )
+        if resp.status_code != 200 or "access_token" not in (resp.json() or {}):
+            return False
+        self._store_session(resp.json())
+        return True
+
+    def _reauth(self) -> None:
+        """On a 401: try the refresh token first, else a password sign-in."""
+        if not self._refresh():
+            self._sign_in()
 
     def _headers(self, project_id: str | None = None) -> dict:
         h = {
@@ -44,8 +96,31 @@ class KantanHttpClient:
         resp = self._http.request(method, path, json=json, headers=self._headers(project_id))
         if resp.status_code == 401:
             # Token likely expired — re-auth once and retry.
-            self._sign_in()
+            self._reauth()
             resp = self._http.request(method, path, json=json, headers=self._headers(project_id))
+        resp.raise_for_status()
+        return resp
+
+    # --- Supabase PostgREST (web_baker, operator-owned via RLS) ---------------
+    def _db_headers(self, extra: dict | None = None) -> dict:
+        h = {
+            "apikey": self._anon_key,
+            "Authorization": f"Bearer {self._access_token}",
+            "Content-Type": "application/json",
+        }
+        if extra:
+            h.update(extra)
+        return h
+
+    def _db_request(self, method: str, path: str, *, json: object | None = None,
+                    params: dict | None = None, headers: dict | None = None) -> httpx.Response:
+        resp = self._db.request(method, path, json=json, params=params,
+                                headers=self._db_headers(headers))
+        if resp.status_code == 401:
+            # Generation polling can run for minutes — re-auth once and retry.
+            self._reauth()
+            resp = self._db.request(method, path, json=json, params=params,
+                                    headers=self._db_headers(headers))
         resp.raise_for_status()
         return resp
 
@@ -90,13 +165,14 @@ class KantanHttpClient:
         return data.get("instruction", data)
 
     def create_web_baker(self, project_id: str, instruction: dict) -> str:
-        """Create the web_baker row (Supabase-direct; RLS = operator owns it)."""
-        res = (
-            self._supabase.table("web_baker")
-            .insert({"project_id": project_id, "instruction": instruction, "status": "new"})
-            .execute()
+        """Create the web_baker row (PostgREST; RLS = operator owns it)."""
+        resp = self._db_request(
+            "POST",
+            "/web_baker",
+            json={"project_id": project_id, "instruction": instruction, "status": "new"},
+            headers={"Prefer": "return=representation"},
         )
-        return res.data[0]["id"]
+        return resp.json()[0]["id"]
 
     def run_web_baker(self, project_id: str, web_baker_id: str, version: str = "v2") -> None:
         self._request(
@@ -107,26 +183,27 @@ class KantanHttpClient:
         )
 
     def get_web_baker_status(self, web_baker_id: str) -> str:
-        res = (
-            self._supabase.table("web_baker")
-            .select("status")
-            .eq("id", web_baker_id)
-            .single()
-            .execute()
+        resp = self._db_request(
+            "GET",
+            "/web_baker",
+            params={"id": f"eq.{web_baker_id}", "select": "status"},
+            headers={"Accept": "application/vnd.pgrst.object+json"},
         )
-        return (res.data or {}).get("status", "unknown")
+        return (resp.json() or {}).get("status", "unknown")
 
     # --- website source download / repository upload -------------------------
     def latest_web_baker_id(self, project_id: str) -> str | None:
-        res = (
-            self._supabase.table("web_baker")
-            .select("id")
-            .eq("project_id", project_id)
-            .order("created_at", desc=True)
-            .limit(1)
-            .execute()
+        resp = self._db_request(
+            "GET",
+            "/web_baker",
+            params={
+                "project_id": f"eq.{project_id}",
+                "select": "id",
+                "order": "created_at.desc",
+                "limit": "1",
+            },
         )
-        rows = res.data or []
+        rows = resp.json() or []
         return rows[0]["id"] if rows else None
 
     def download_website_zip(self, project_id: str, web_baker_id: str) -> bytes:
