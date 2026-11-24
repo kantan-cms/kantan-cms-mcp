@@ -23,6 +23,8 @@ class KantanHttpClient:
         if not res.session:
             raise RuntimeError("Operator sign-in failed")
         self._access_token = res.session.access_token
+        # Make direct DB reads/writes (web_baker) run as the operator (RLS).
+        self._supabase.postgrest.auth(self._access_token)
 
     def _headers(self, project_id: str | None = None) -> dict:
         h = {
@@ -69,3 +71,43 @@ class KantanHttpClient:
             "/tenant_user/invite",
             json={"tenant_id": tenant_id, "email": email, "role": role},
         )
+
+    # --- website generation (web-baker) --------------------------------------
+    def generate_baker_instruction(self, project_id: str, title: str,
+                                   description: str | None) -> dict:
+        """Ask the backend to turn a title + brief into a baker instruction."""
+        resp = self._request(
+            "POST",
+            "/ai/baker_instruction",
+            json={"title": title, "description": description or ""},
+            project_id=project_id,
+        )
+        data = resp.json()
+        return data.get("instruction", data)
+
+    def create_web_baker(self, project_id: str, instruction: dict) -> str:
+        """Create the web_baker row (Supabase-direct; RLS = operator owns it)."""
+        res = (
+            self._supabase.table("web_baker")
+            .insert({"project_id": project_id, "instruction": instruction, "status": "new"})
+            .execute()
+        )
+        return res.data[0]["id"]
+
+    def run_web_baker(self, project_id: str, web_baker_id: str, version: str = "v2") -> None:
+        self._request(
+            "POST",
+            f"/web_baker/{web_baker_id}/run",
+            json={"version": version},
+            project_id=project_id,
+        )
+
+    def get_web_baker_status(self, web_baker_id: str) -> str:
+        res = (
+            self._supabase.table("web_baker")
+            .select("status")
+            .eq("id", web_baker_id)
+            .single()
+            .execute()
+        )
+        return (res.data or {}).get("status", "unknown")

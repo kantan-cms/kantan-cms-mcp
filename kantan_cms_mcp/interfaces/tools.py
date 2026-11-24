@@ -14,6 +14,9 @@ from kantan_cms_mcp.applications.use_cases.move_project import MoveProjectUseCas
 from kantan_cms_mcp.applications.use_cases.provision_from_excel import (
     ProvisionFromExcelUseCase,
 )
+from kantan_cms_mcp.applications.use_cases.provision_and_generate import (
+    ProvisionAndGenerateUseCase,
+)
 from kantan_cms_mcp.applications.use_cases.provision_lead_client import (
     ProvisionLeadClientUseCase,
 )
@@ -69,6 +72,27 @@ def register_tools(mcp: FastMCP) -> None:
         re-running a sheet skips rows already provisioned."""
         results = ProvisionFromExcelUseCase(_client(), _ledger()).execute(path)
         return [asdict(r) for r in results]
+
+    @mcp.tool()
+    def provision_and_generate(
+        name: str,
+        brief: str,
+        project_name: str | None = None,
+        description: str | None = None,
+        external_key: str | None = None,
+    ) -> dict:
+        """Provision a lead AND generate their website end-to-end: build + generate
+        in your (subscribed) tenant, then move the finished project into the lead's
+        tenant. Blocks until generation finishes (minutes) or times out. Idempotent
+        and resumable via the ledger — a re-run continues from the last stage."""
+        lead = LeadClient(
+            name=name,
+            project_name=project_name,
+            description=description,
+            brief=brief,
+            external_key=external_key,
+        )
+        return asdict(ProvisionAndGenerateUseCase(_client(), _ledger()).execute(lead))
 
     @mcp.tool()
     def move_project(project_id: str, destination_tenant_id: str) -> dict:
