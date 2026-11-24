@@ -2,10 +2,14 @@
 backend's user-JWT surface (/v1/app). One instance per MCP process."""
 from __future__ import annotations
 
+import base64
+
 import httpx
 from supabase import create_client
 
 from kantan_cms_mcp.config import Config
+
+ZIP_CONTENT_TYPE = "application/zip"
 
 
 class KantanHttpClient:
@@ -111,3 +115,64 @@ class KantanHttpClient:
             .execute()
         )
         return (res.data or {}).get("status", "unknown")
+
+    # --- website source download / repository upload -------------------------
+    def latest_web_baker_id(self, project_id: str) -> str | None:
+        res = (
+            self._supabase.table("web_baker")
+            .select("id")
+            .eq("project_id", project_id)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = res.data or []
+        return rows[0]["id"] if rows else None
+
+    def download_website_zip(self, project_id: str, web_baker_id: str) -> bytes:
+        # Ask the backend for a presigned GET, then pull the bytes from GCS.
+        resp = self._request(
+            "GET",
+            f"/web_baker/{web_baker_id}/presigned_url",
+            project_id=project_id,
+        )
+        url = resp.json()["presigned_url"]
+        with httpx.Client(timeout=120.0) as raw:
+            got = raw.get(url)
+            got.raise_for_status()
+            return got.content
+
+    def overwrite_website_zip(
+        self, project_id: str, web_baker_id: str, zip_bytes: bytes
+    ) -> None:
+        self._request(
+            "POST",
+            f"/web_baker/{web_baker_id}/website_zip",
+            json={"zip_base64": base64.b64encode(zip_bytes).decode("ascii")},
+            project_id=project_id,
+        )
+
+    def upload_repository_zip(
+        self, project_id: str, name: str, zip_bytes: bytes
+    ) -> None:
+        # Presigned PUT bound to application/zip — the uploader must match it.
+        resp = self._request(
+            "POST",
+            "/repository/upload_url/",
+            json={"name": name},
+            project_id=project_id,
+        )
+        url = resp.json()["url"]
+        with httpx.Client(timeout=120.0) as raw:
+            put = raw.put(
+                url, content=zip_bytes, headers={"Content-Type": ZIP_CONTENT_TYPE}
+            )
+            put.raise_for_status()
+
+    def import_website_to_repository(self, project_id: str, name: str) -> dict:
+        return self._request(
+            "POST",
+            "/repository/import_web_baker/",
+            json={"name": name},
+            project_id=project_id,
+        ).json()
