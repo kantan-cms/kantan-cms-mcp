@@ -144,6 +144,16 @@ class ApiAccessUseCase:
         """Promote the current preview to the live/production host."""
         return self._api.request("POST", "/hosting/deploy/", project_id=project_id)
 
+    def set_hosting(self, project_id: str, enabled: bool | None = None,
+                    url: str | None = None) -> Any:
+        """Enable/disable hosting and/or set its URL (PATCH /hosting/)."""
+        body: dict = {}
+        if enabled is not None:
+            body["enabled"] = enabled
+        if url is not None:
+            body["url"] = url
+        return self._api.request("PATCH", "/hosting/", body, project_id)
+
     def get_hosting_status(self, project_id: str, web_baker_id: str) -> Any:
         return self._api.request(
             "GET", f"/web_baker/{web_baker_id}/hosting_status",

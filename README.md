@@ -43,6 +43,7 @@ partial ones, so a batch never duplicates tenants/projects.
 
 ### Hosting, deploy & domains
 
+- `enable_hosting(project_id, enabled=True, url?)` — flip the project's hosting-enabled setting (and optionally its URL), i.e. the console's Hosting Settings toggle. `enabled=False` disables.
 - `deploy_to_preview(project_id, web_baker_id)` / `deploy_to_live(project_id)` / `get_hosting_status(project_id, web_baker_id)`.
 - `delete_preview(project_id)` / `delete_hosting(project_id)` (teardown; Cloudflare domain settings are kept on hosting delete).
 - Custom domain: `set_custom_domain(project_id, hostname)` (returns TXT validation records), `list_custom_hostnames(project_id)`, `get_domain_status(project_id, hostname_id)` (TXT ownership + SSL validation records to add to DNS). Note: the fixed CNAME *target* the customer points at isn't surfaced by the backend yet.

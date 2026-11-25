@@ -373,6 +373,16 @@ def register_tools(mcp: FastMCP) -> None:
         return ApiAccessUseCase(_client()).deploy_to_live(project_id)
 
     @mcp.tool()
+    def enable_hosting(
+        project_id: str, enabled: bool = True, url: str | None = None
+    ) -> object:
+        """Enable (or disable) hosting for the project and optionally set its
+        URL — what the console's Hosting Settings toggle does. Pass enabled=False
+        to turn hosting off. (Deploying also serves the site; this flips the
+        hosting-enabled setting explicitly.)"""
+        return ApiAccessUseCase(_client()).set_hosting(project_id, enabled, url)
+
+    @mcp.tool()
     def get_hosting_status(project_id: str, web_baker_id: str) -> object:
         """Hosting status + live URL for the project's build."""
         return ApiAccessUseCase(_client()).get_hosting_status(project_id, web_baker_id)
