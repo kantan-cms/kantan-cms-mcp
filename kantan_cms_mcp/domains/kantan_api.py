@@ -93,6 +93,18 @@ class KantanApi(Protocol):
         under `name` (no local download; requires the Repository app)."""
         ...
 
+    # --- image generation ----------------------------------------------------
+    def generate_images_to_collection(
+        self,
+        project_id: str,
+        collection_id: str,
+        prompts: list[str],
+        aspect_ratio: str = "1:1",
+    ) -> dict:
+        """Generate images from prompts and store them as records in a media
+        collection. Returns {images: [{id, url, prompt}]}."""
+        ...
+
     # --- website generation (web editor) -------------------------------------
     def generate_website_in_editor(
         self, project_id: str, specification: str, media_collection_id: str | None = None

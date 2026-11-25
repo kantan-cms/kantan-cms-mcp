@@ -193,6 +193,25 @@ class KantanHttpClient:
             project_id=project_id,
         ).json()
 
+    # --- image generation ----------------------------------------------------
+    def generate_images_to_collection(
+        self,
+        project_id: str,
+        collection_id: str,
+        prompts: list[str],
+        aspect_ratio: str = "1:1",
+    ) -> dict:
+        # Generates up to 10 images server-side (seconds each); allow minutes.
+        resp = self._http.request(
+            "POST",
+            f"/collections/{collection_id}/records/generate_images/",
+            json={"prompts": prompts, "aspect_ratio": aspect_ratio},
+            headers=self._headers(project_id),
+            timeout=300.0,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
     # --- website generation (web editor) -------------------------------------
     def generate_website_in_editor(
         self, project_id: str, specification: str,
