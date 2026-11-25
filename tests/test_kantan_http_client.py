@@ -229,6 +229,33 @@ def test_generate_website_in_editor_posts_spec(monkeypatch):
     }
 
 
+def test_export_editor_site_to_astro_returns_bytes(monkeypatch):
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/web_editor/export_astro/"):
+            seen["method"] = request.method
+            seen["project"] = request.headers.get("X-Project-Id")
+            return httpx.Response(200, content=b"PK\x03\x04zip")
+        return httpx.Response(404)
+
+    client = build_client(monkeypatch, handler)
+    data = client.export_editor_site_to_astro("p-1")
+    assert data == b"PK\x03\x04zip"
+    assert seen["method"] == "POST"
+    assert seen["project"] == "p-1"
+
+
+def test_upload_editor_site_to_repository(monkeypatch):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/web_editor/upload_to_repository/"):
+            return httpx.Response(200, json={"ok": True})
+        return httpx.Response(404)
+
+    client = build_client(monkeypatch, handler)
+    assert client.upload_editor_site_to_repository("p-1") == {"ok": True}
+
+
 def test_get_openapi(monkeypatch):
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/openapi.json"):

@@ -33,6 +33,8 @@ partial ones, so a batch never duplicates tenants/projects.
 - `download_website(project_id, out_path, web_baker_id?)` — download the generated website.zip source.
 - `upload_website_to_repository(project_id, zip_path, name?, set_as_source?)` — upload an edited zip into the project's Repository store.
 - `import_generated_website_to_repository(project_id, name?)` — server-side copy of the generated site into the Repository store.
+- `export_editor_site_to_astro(project_id, out_path)` — convert the project's **Web Editor** site to an Astro project and download the zip (the editor's "Export to Astro", headless).
+- `upload_editor_site_to_repository(project_id)` — convert the Web Editor site to Astro and push it into the project's Repository store (the editor's "Upload to Repository", headless; needs the Repository app). Both need the backend's `WEB_EDITOR_URL` set.
 
 ### Content & apps
 
