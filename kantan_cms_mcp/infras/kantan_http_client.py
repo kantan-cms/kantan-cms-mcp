@@ -193,6 +193,26 @@ class KantanHttpClient:
             project_id=project_id,
         ).json()
 
+    # --- web editor: Astro export / repository push --------------------------
+    def export_editor_site_to_astro(self, project_id: str) -> bytes:
+        resp = self._http.request(
+            "POST",
+            "/web_editor/export_astro/",
+            headers=self._headers(project_id),
+            timeout=180.0,
+        )
+        resp.raise_for_status()
+        return resp.content
+
+    def upload_editor_site_to_repository(self, project_id: str) -> dict:
+        resp = self._request(
+            "POST", "/web_editor/upload_to_repository/", project_id=project_id
+        )
+        try:
+            return resp.json()
+        except ValueError:
+            return {"ok": True, "status": resp.status_code}
+
     # --- image generation ----------------------------------------------------
     def generate_images_to_collection(
         self,

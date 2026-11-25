@@ -13,6 +13,10 @@ from kantan_cms_mcp.applications.use_cases.api_access import ApiAccessUseCase
 from kantan_cms_mcp.applications.use_cases.download_website import (
     DownloadWebsiteUseCase,
 )
+from kantan_cms_mcp.applications.use_cases.editor_astro import (
+    ExportEditorSiteToAstroUseCase,
+    UploadEditorSiteToRepositoryUseCase,
+)
 from kantan_cms_mcp.applications.use_cases.generate_images_to_collection import (
     GenerateImagesToCollectionUseCase,
 )
@@ -212,6 +216,22 @@ def register_tools(mcp: FastMCP) -> None:
         return PublishWebsiteToRepositoryUseCase(_client()).import_generated(
             project_id, name
         )
+
+    @mcp.tool()
+    def export_editor_site_to_astro(project_id: str, out_path: str) -> dict:
+        """Convert the project's Web Editor site to an Astro project and download
+        the zip to `out_path` (the editor's "Export to Astro" action, headless).
+        Needs a saved editor site and the backend's WEB_EDITOR_URL configured.
+        Returns {path, bytes}."""
+        return ExportEditorSiteToAstroUseCase(_client()).execute(project_id, out_path)
+
+    @mcp.tool()
+    def upload_editor_site_to_repository(project_id: str) -> dict:
+        """Convert the project's Web Editor site to an Astro project and push it
+        into the project's Repository store (the editor's "Upload to Repository"
+        action, headless). Requires the Repository app active and the backend's
+        WEB_EDITOR_URL configured."""
+        return UploadEditorSiteToRepositoryUseCase(_client()).execute(project_id)
 
     # --- flexible API access ------------------------------------------------
     @mcp.tool()

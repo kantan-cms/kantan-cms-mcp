@@ -93,6 +93,17 @@ class KantanApi(Protocol):
         under `name` (no local download; requires the Repository app)."""
         ...
 
+    # --- web editor: Astro export / repository push --------------------------
+    def export_editor_site_to_astro(self, project_id: str) -> bytes:
+        """Convert the project's Web Editor site to an Astro project; returns the
+        zip bytes."""
+        ...
+
+    def upload_editor_site_to_repository(self, project_id: str) -> dict:
+        """Convert the project's Web Editor site to Astro and push it into the
+        project's Repository store (the editor's "Upload to Repository")."""
+        ...
+
     # --- image generation ----------------------------------------------------
     def generate_images_to_collection(
         self,
