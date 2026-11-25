@@ -6,6 +6,7 @@ doesn't have to hand-build those calls. Everything runs as the key's user, so
 reach == that user's own account."""
 from __future__ import annotations
 
+import secrets
 from typing import Any
 
 from kantan_cms_mcp.domains.kantan_api import KantanApi
@@ -206,6 +207,77 @@ class ApiAccessUseCase:
                               project_user_id: str) -> Any:
         return self._api.request(
             "DELETE", f"/project_user/{project_user_id}", project_id=project_id
+        )
+
+    # --- API keys ---------------------------------------------------------
+    def create_api_key(self, project_id: str, name: str,
+                       permissions: list | None = None,
+                       expires_at: str | None = None) -> dict:
+        """Generate a project API key (for /v1/api + /v1/public). The token is
+        created here (the backend stores only its hash), so it is returned ONCE.
+        permissions default to ["*"]; narrow them for least privilege."""
+        token = f"kcms_{secrets.token_urlsafe(24)}"
+        perms = permissions if permissions is not None else ["*"]
+        self._api.request(
+            "POST", "/api_key/",
+            {"api_keys": [{
+                "name": name,
+                "key": token,
+                "expires_at": expires_at,
+                "permissions": perms,
+            }]},
+            project_id,
+        )
+        return {"name": name, "key": token, "permissions": perms}
+
+    # --- project env vars / secrets (the build vault) ---------------------
+    def list_env_vars(self, project_id: str) -> Any:
+        """List the project's env vars (secret values are write-only)."""
+        return self._api.request("GET", "/vault/", project_id=project_id)
+
+    def set_env_var(self, project_id: str, key: str, value: str,
+                    secret: bool = False) -> Any:
+        """Set a project env var the build injects (secret=True stores it
+        write-only). key: letters/digits/underscore, starting letter/underscore."""
+        kind = "secret" if secret else "env"
+        return self._api.request(
+            "PUT", f"/vault/{key}", {"kind": kind, "value": value}, project_id
+        )
+
+    def delete_env_var(self, project_id: str, key: str) -> Any:
+        return self._api.request(
+            "DELETE", f"/vault/{key}", project_id=project_id
+        )
+
+    def configure_site_env(self, project_id: str, cms_base_url: str,
+                           key_name: str = "website-build",
+                           permissions: list | None = None) -> dict:
+        """One-shot setup so a built site (website-base-astro) can read the CMS:
+        create an API key and store it + the project id + base URL in the build
+        vault as CMS_API_KEY (secret), PROJECT_ID and CMS_BASE_URL. The builder
+        injects these at build time (GET /v1/api/build/env). Returns the API key
+        ONCE."""
+        created = self.create_api_key(project_id, key_name, permissions)
+        self.set_env_var(project_id, "CMS_API_KEY", created["key"], secret=True)
+        self.set_env_var(project_id, "PROJECT_ID", project_id, secret=False)
+        self.set_env_var(project_id, "CMS_BASE_URL", cms_base_url, secret=False)
+        return {
+            "ok": True,
+            "api_key_name": key_name,
+            "api_key": created["key"],
+            "vars_set": ["CMS_API_KEY (secret)", "PROJECT_ID", "CMS_BASE_URL"],
+        }
+
+    # --- build from the Repository bundle ---------------------------------
+    def build_from_repository(self, project_id: str, bundle: str,
+                             runtime: str = "node22",
+                             script_file: str = "build.sh") -> Any:
+        """Trigger a Kantan Builder build from a Repository-app zip bundle.
+        Requires the Repository app active; `bundle` is the stored zip name."""
+        return self._api.request(
+            "POST", "/hosting/build/repository/",
+            {"bundle": bundle, "runtime": runtime, "script_file": script_file},
+            project_id,
         )
 
     # --- apps -------------------------------------------------------------
