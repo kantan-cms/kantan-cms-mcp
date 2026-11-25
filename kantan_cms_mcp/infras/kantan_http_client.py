@@ -124,6 +124,21 @@ class KantanHttpClient:
         )
         return (resp.json() or {}).get("status", "unknown")
 
+    def set_web_baker_instruction(
+        self, project_id: str, web_baker_id: str, instruction: dict
+    ) -> None:
+        self._request(
+            "PUT",
+            f"/web_baker/{web_baker_id}/instruction",
+            json={"instruction": instruction},
+            project_id=project_id,
+        )
+
+    def reset_web_baker(self, project_id: str, web_baker_id: str) -> None:
+        self._request(
+            "POST", f"/web_baker/{web_baker_id}/reset", project_id=project_id
+        )
+
     # --- website source download / repository upload -------------------------
     def latest_web_baker_id(self, project_id: str) -> str | None:
         resp = self._request("GET", "/web_baker/", project_id=project_id)

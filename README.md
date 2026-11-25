@@ -26,6 +26,7 @@ partial ones, so a batch never duplicates tenants/projects.
 - `provision_lead_client(name, project_name?, description?, client_email?, external_key?)` — one lead (tenant + project, no generation).
 - `provision_from_excel(path)` — every row; one result each, failures isolated.
 - `provision_and_generate(name, brief, project_name?, description?, external_key?)` — create a tenant + project and generate the site **in place**. Blocks until generation finishes (minutes) or times out; resumable. The tenant must have an active subscription to generate (see below).
+- `regenerate_website(project_id, title, description?, web_baker_id?)` — regenerate an **existing** project's site against its **current** collections (rebuilds the instruction, resets, re-runs, waits). Use this instead of a second `POST /web_baker/`, which 400s (one per project). Granular: `reset_website`, `run_website`.
 - `move_project(project_id, destination_tenant_id)` — relocate a project (backend enforces owner-of-both, single-member).
 - `hand_over_client(tenant_id, client_email, role="owner")` — invite someone to a tenant.
 - `download_website(project_id, out_path, web_baker_id?)` — download the generated website.zip source.
