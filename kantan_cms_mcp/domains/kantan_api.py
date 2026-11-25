@@ -104,3 +104,11 @@ class KantanApi(Protocol):
         """Generate images from prompts and store them as records in a media
         collection. Returns {images: [{id, url, prompt}]}."""
         ...
+
+    # --- website generation (web editor) -------------------------------------
+    def generate_website_in_editor(
+        self, project_id: str, specification: str, media_collection_id: str | None = None
+    ) -> dict:
+        """Generate a whole site from scratch in the Web Editor (backend proxies
+        to the editor; blocks for minutes). Returns {ok, reply, changed, pages}."""
+        ...

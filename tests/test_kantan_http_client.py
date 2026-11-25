@@ -202,6 +202,33 @@ def test_generate_images_to_collection_posts_prompts(monkeypatch):
     assert seen["body"] == {"prompts": ["a cat"], "aspect_ratio": "16:9"}
 
 
+def test_generate_website_in_editor_posts_spec(monkeypatch):
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/web_editor/generate/"):
+            seen["method"] = request.method
+            seen["project"] = request.headers.get("X-Project-Id")
+            seen["mcp_key"] = request.headers.get("X-MCP-Key")
+            seen["body"] = _json.loads(request.content)
+            return httpx.Response(
+                200, json={"ok": True, "changed": [{"path": "/", "title": "Home"}]}
+            )
+        return httpx.Response(404)
+
+    client = build_client(monkeypatch, handler)
+    out = client.generate_website_in_editor("p-1", "A bakery site", "media-1")
+
+    assert out["ok"] is True
+    assert seen["method"] == "POST"
+    assert seen["project"] == "p-1"
+    assert seen["mcp_key"] == "mcp_testkey"
+    assert seen["body"] == {
+        "specification": "A bakery site",
+        "media_collection_id": "media-1",
+    }
+
+
 def test_get_openapi(monkeypatch):
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/openapi.json"):
