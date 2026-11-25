@@ -34,9 +34,21 @@ partial ones, so a batch never duplicates tenants/projects.
 
 ### Content & apps
 
-- `list_collections(project_id)` / `create_collection(project_id, name, type, description?, icon?)` — `type` is `blog|form|media|dict|custom`; default fields are seeded, so it's usable immediately (e.g. for generation). (Collections have no update/delete on `/v1/app`; `duplicate` is reachable via `kantan_request`.)
+- Collections: `list_collections(project_id)`, `create_collection(project_id, name, type, description?, icon?)` (`type` is `blog|form|media|dict|custom`; default fields are seeded, so it's usable immediately), `update_collection(…, name?, description?, icon?)` (type is immutable), `delete_collection(project_id, collection_id)` (cascades fields + records).
 - Records CRUD: `list_records(project_id, collection_id, page_size?, page_num?)`, `get_record(…, record_id)`, `create_record(project_id, collection_id, data)`, `update_record(…, record_id, data)`, `delete_record(…, record_id)` — `data` maps field `custom_key` → value.
+- Records bulk (no per-record app events): `bulk_create_records(project_id, collection_id, records)`, `bulk_update_records(…, records=[{id, data}])`, `bulk_delete_records(…, ids)`.
 - `list_apps(project_id)` (catalog) / `list_installed_apps(project_id)` / `install_app(project_id, app_id)` / `configure_app(project_id, installation_id, config)` / `uninstall_app(project_id, installation_id)`.
+
+### Hosting, deploy & domains
+
+- `deploy_to_preview(project_id, web_baker_id)` / `deploy_to_live(project_id)` / `get_hosting_status(project_id, web_baker_id)`.
+- `delete_preview(project_id)` / `delete_hosting(project_id)` (teardown; Cloudflare domain settings are kept on hosting delete).
+- Custom domain: `set_custom_domain(project_id, hostname)` (returns TXT validation records), `list_custom_hostnames(project_id)`, `get_domain_status(project_id, hostname_id)` (TXT ownership + SSL validation records to add to DNS). Note: the fixed CNAME *target* the customer points at isn't surfaced by the backend yet.
+
+### Project membership (role-gated)
+
+- `list_project_members(project_id)` / `list_project_roles(project_id)`.
+- `connect_user_to_project(project_id, user_id)` — add an existing tenant member (as `member`), `set_project_member_role(project_id, project_user_id, project_role_id)`, `remove_project_member(project_id, project_user_id)`.
 
 ### Flexible access (escape hatch)
 
