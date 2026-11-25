@@ -32,6 +32,17 @@ partial ones, so a batch never duplicates tenants/projects.
 - `upload_website_to_repository(project_id, zip_path, name?, set_as_source?)` — upload an edited zip into the project's Repository store.
 - `import_generated_website_to_repository(project_id, name?)` — server-side copy of the generated site into the Repository store.
 
+### Content & apps
+
+- `list_collections(project_id)` / `create_collection(project_id, name, type, description?, icon?)` — `type` is `blog|form|media|dict|custom`; default fields are seeded, so it's usable immediately (e.g. for generation).
+- `create_record(project_id, collection_id, data)` — `data` maps field `custom_key` → value.
+- `list_apps(project_id)` (catalog) / `list_installed_apps(project_id)` / `install_app(project_id, app_id)` / `configure_app(project_id, installation_id, config)` / `uninstall_app(project_id, installation_id)`.
+
+### Flexible access (escape hatch)
+
+- `list_api_endpoints()` — every `/v1/app` endpoint as `{method, path, summary}` (OpenAPI discovery).
+- `kantan_request(method, path, body?, project_id?)` — call **any** `/v1/app` endpoint as the user. `path` is relative to `/v1/app`; pass `project_id` for project-scoped endpoints. Use this for anything without a dedicated tool. The key acts as your full account, so its reach is whatever you can do in the console.
+
 ### Generation needs a subscription
 
 `run`/`provision_and_generate` bill the **project's own tenant**. A brand-new

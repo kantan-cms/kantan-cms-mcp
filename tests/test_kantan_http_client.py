@@ -133,3 +133,58 @@ def test_401_is_terminal(monkeypatch):
     with pytest.raises(httpx.HTTPStatusError):
         client.create_tenant("Acme")
     assert calls["n"] == 1  # surfaced immediately, not retried
+
+
+# --- generic request + discovery ------------------------------------------
+
+
+def test_request_returns_json_and_sends_project(monkeypatch):
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["method"] = request.method
+        seen["path"] = request.url.path
+        seen["project"] = request.headers.get("X-Project-Id")
+        seen["mcp_key"] = request.headers.get("X-MCP-Key")
+        return httpx.Response(200, json={"data": [{"id": "c1"}]})
+
+    client = build_client(monkeypatch, handler)
+    out = client.request("GET", "/collections/", project_id="p-1")
+
+    assert out == {"data": [{"id": "c1"}]}
+    assert (seen["method"], seen["path"]) == ("GET", "/v1/app/collections/")
+    assert seen["project"] == "p-1"
+    assert seen["mcp_key"] == "mcp_testkey"
+
+
+def test_request_empty_response_returns_ok(monkeypatch):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(204)
+
+    client = build_client(monkeypatch, handler)
+    assert client.request("DELETE", "/installations/i1", project_id="p-1") == {
+        "ok": True,
+        "status": 204,
+    }
+
+
+def test_request_posts_body(monkeypatch):
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = _json.loads(request.content)
+        return httpx.Response(200, json={"app_installation": {"id": "i1"}})
+
+    client = build_client(monkeypatch, handler)
+    client.request("POST", "/installations/", {"app_id": "buffer"}, "p-1")
+    assert seen["body"] == {"app_id": "buffer"}
+
+
+def test_get_openapi(monkeypatch):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/openapi.json"):
+            return httpx.Response(200, json={"paths": {"/collections": {"post": {}}}})
+        return httpx.Response(404)
+
+    client = build_client(monkeypatch, handler)
+    assert "paths" in client.get_openapi()

@@ -4,10 +4,19 @@ signed-in user (via a per-user MCP key). Keeping this abstract lets use cases be
 tested without HTTP."""
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Any, Protocol
 
 
 class KantanApi(Protocol):
+    def request(self, method: str, path: str, body: dict | None = None,
+                project_id: str | None = None) -> Any:
+        """Call any /v1/app endpoint as the user (generic escape hatch)."""
+        ...
+
+    def get_openapi(self) -> dict:
+        """The /v1/app OpenAPI document (endpoint discovery)."""
+        ...
+
     def create_tenant(self, name: str) -> str:
         """Create a tenant (the key's user becomes its owner). Returns tenant_id."""
         ...

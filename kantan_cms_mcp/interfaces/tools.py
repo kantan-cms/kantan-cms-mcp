@@ -9,6 +9,7 @@ from functools import lru_cache
 
 from fastmcp import FastMCP
 
+from kantan_cms_mcp.applications.use_cases.api_access import ApiAccessUseCase
 from kantan_cms_mcp.applications.use_cases.download_website import (
     DownloadWebsiteUseCase,
 )
@@ -146,6 +147,85 @@ def register_tools(mcp: FastMCP) -> None:
         return PublishWebsiteToRepositoryUseCase(_client()).import_generated(
             project_id, name
         )
+
+    # --- flexible API access ------------------------------------------------
+    @mcp.tool()
+    def list_api_endpoints() -> list[dict]:
+        """Discover what `kantan_request` can reach: every /v1/app endpoint as
+        {method, path, summary}. Call this first when you need an operation that
+        has no dedicated tool below."""
+        return ApiAccessUseCase(_client()).endpoints()
+
+    @mcp.tool()
+    def kantan_request(
+        method: str,
+        path: str,
+        body: dict | None = None,
+        project_id: str | None = None,
+    ) -> object:
+        """Call ANY Kantan /v1/app endpoint as the signed-in user — the escape
+        hatch for anything without a dedicated tool. `path` is relative to
+        /v1/app (e.g. "/collections", "/installations/"); pass project_id for
+        project-scoped endpoints (it becomes the X-Project-Id header). Use
+        list_api_endpoints to discover paths. Returns parsed JSON."""
+        return ApiAccessUseCase(_client()).call(method, path, body, project_id)
+
+    @mcp.tool()
+    def list_collections(project_id: str) -> object:
+        """List a project's collections."""
+        return ApiAccessUseCase(_client()).list_collections(project_id)
+
+    @mcp.tool()
+    def create_collection(
+        project_id: str,
+        name: str,
+        type: str,
+        description: str | None = None,
+        icon: str | None = None,
+    ) -> object:
+        """Create a collection. `type` is one of blog|form|media|dict|custom;
+        default fields for that type are seeded automatically, so the collection
+        is immediately usable (e.g. for website generation)."""
+        return ApiAccessUseCase(_client()).create_collection(
+            project_id, name, type, description, icon
+        )
+
+    @mcp.tool()
+    def create_record(project_id: str, collection_id: str, data: dict) -> object:
+        """Create a record in a collection. `data` is a flat map of field
+        custom_key -> value (match the collection's fields)."""
+        return ApiAccessUseCase(_client()).create_record(
+            project_id, collection_id, data
+        )
+
+    @mcp.tool()
+    def list_apps(project_id: str) -> object:
+        """The installable app catalog (app ids + metadata)."""
+        return ApiAccessUseCase(_client()).list_apps(project_id)
+
+    @mcp.tool()
+    def list_installed_apps(project_id: str) -> object:
+        """Apps currently installed on the project."""
+        return ApiAccessUseCase(_client()).list_installed_apps(project_id)
+
+    @mcp.tool()
+    def install_app(project_id: str, app_id: str) -> object:
+        """Install an app on the project (configure it afterwards with
+        configure_app). app_id comes from list_apps."""
+        return ApiAccessUseCase(_client()).install_app(project_id, app_id)
+
+    @mcp.tool()
+    def configure_app(project_id: str, installation_id: str, config: dict) -> object:
+        """Set an installed app's settings (installation_id from
+        list_installed_apps; config shape per the app's settings schema)."""
+        return ApiAccessUseCase(_client()).configure_app(
+            project_id, installation_id, config
+        )
+
+    @mcp.tool()
+    def uninstall_app(project_id: str, installation_id: str) -> object:
+        """Remove an installed app from the project."""
+        return ApiAccessUseCase(_client()).uninstall_app(project_id, installation_id)
 
     @mcp.tool()
     def hand_over_client(tenant_id: str, client_email: str, role: str = "owner") -> dict:
