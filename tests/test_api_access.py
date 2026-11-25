@@ -289,3 +289,28 @@ def test_project_settings_routing():
     )
     uc.get_feature_toggles("p-1")
     assert api.calls[-1] == ("GET", "/features", None, "p-1")
+
+
+def test_schema_field_routing():
+    api = FakeApi()
+    uc = ApiAccessUseCase(api)
+    uc.list_fields("p-1", "c1")
+    assert api.calls[-1] == ("GET", "/collections/c1/fields", None, "p-1")
+    uc.add_field("p-1", "c1", "Author", "text", required=True)
+    assert api.calls[-1] == (
+        "POST", "/collections/c1/fields",
+        {"name": "Author", "type": "text", "required": True}, "p-1",
+    )
+    uc.add_field("p-1", "c1", "Status", "select", key="status", attr={"options": ["a"]})
+    assert api.calls[-1] == (
+        "POST", "/collections/c1/fields",
+        {"name": "Status", "type": "select", "required": False,
+         "key": "status", "attr": {"options": ["a"]}}, "p-1",
+    )
+    uc.update_field("p-1", "c1", "f9", name="Writer", required=False)
+    assert api.calls[-1] == (
+        "PATCH", "/collections/c1/fields/f9",
+        {"name": "Writer", "required": False}, "p-1",
+    )
+    uc.delete_field("p-1", "c1", "f9")
+    assert api.calls[-1] == ("DELETE", "/collections/c1/fields/f9", None, "p-1")

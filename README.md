@@ -36,6 +36,7 @@ partial ones, so a batch never duplicates tenants/projects.
 ### Content & apps
 
 - Collections: `list_collections(project_id)`, `create_collection(project_id, name, type, description?, icon?)` (`type` is `blog|form|media|dict|custom`; default fields are seeded, so it's usable immediately), `update_collection(…, name?, description?, icon?)` (type is immutable), `delete_collection(project_id, collection_id)` (cascades fields + records).
+- Collection schema (fields): `list_fields(project_id, collection_id)`, `add_field(…, name, type, key?, required?, order?, default_value?, attr?)`, `update_field(…, field_id, …)`, `delete_field(…, field_id)` — shape a collection's fields per site (`type` is a CMS field type; select/tag options go in `attr`).
 - Records CRUD: `list_records(project_id, collection_id, page_size?, page_num?)`, `get_record(…, record_id)`, `create_record(project_id, collection_id, data)`, `update_record(…, record_id, data)`, `delete_record(…, record_id)` — `data` maps field `custom_key` → value.
 - Records bulk (no per-record app events): `bulk_create_records(project_id, collection_id, records)`, `bulk_update_records(…, records=[{id, data}])`, `bulk_delete_records(…, ids)`.
 - `list_apps(project_id)` (catalog) / `list_installed_apps(project_id)` / `install_app(project_id, app_id, config?)` (pass `config` to set settings at install) / `configure_app(project_id, installation_id, config)` / `uninstall_app(project_id, installation_id)`.

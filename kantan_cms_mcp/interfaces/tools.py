@@ -245,6 +245,61 @@ def register_tools(mcp: FastMCP) -> None:
         """Delete a collection — its fields and records go with it (DB cascade)."""
         return ApiAccessUseCase(_client()).delete_collection(project_id, collection_id)
 
+    # --- collection schema (fields) -----------------------------------------
+    @mcp.tool()
+    def list_fields(project_id: str, collection_id: str) -> object:
+        """List a collection's fields (schema). Each has id, name, type,
+        custom_key, required, order, etc."""
+        return ApiAccessUseCase(_client()).list_fields(project_id, collection_id)
+
+    @mcp.tool()
+    def add_field(
+        project_id: str,
+        collection_id: str,
+        name: str,
+        type: str,
+        key: str | None = None,
+        required: bool = False,
+        order: int | None = None,
+        default_value: object | None = None,
+        attr: dict | None = None,
+    ) -> object:
+        """Add a field to a collection. `type` is a CMS field type (text,
+        textarea, markdown, tags, datetime, file, dict, number, …). `key` is the
+        machine key (derived from name if omitted). For select/tag fields put
+        options in `attr`. Appended unless `order` is given."""
+        return ApiAccessUseCase(_client()).add_field(
+            project_id, collection_id, name, type, key, required, order,
+            default_value, attr,
+        )
+
+    @mcp.tool()
+    def update_field(
+        project_id: str,
+        collection_id: str,
+        field_id: str,
+        name: str | None = None,
+        type: str | None = None,
+        required: bool | None = None,
+        order: int | None = None,
+        visible: bool | None = None,
+        default_value: object | None = None,
+        attr: dict | None = None,
+    ) -> object:
+        """Update a field (field_id from list_fields). Only provided attrs
+        change."""
+        return ApiAccessUseCase(_client()).update_field(
+            project_id, collection_id, field_id, name, type, required, order,
+            visible, default_value, attr,
+        )
+
+    @mcp.tool()
+    def delete_field(project_id: str, collection_id: str, field_id: str) -> object:
+        """Delete a field from a collection (field_id from list_fields)."""
+        return ApiAccessUseCase(_client()).delete_field(
+            project_id, collection_id, field_id
+        )
+
     @mcp.tool()
     def list_records(
         project_id: str,

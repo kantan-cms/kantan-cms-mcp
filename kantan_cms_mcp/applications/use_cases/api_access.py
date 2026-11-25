@@ -323,6 +323,54 @@ class ApiAccessUseCase:
             project_id,
         )
 
+    # --- collection schema (fields) --------------------------------------
+    def list_fields(self, project_id: str, collection_id: str) -> Any:
+        return self._api.request(
+            "GET", f"/collections/{collection_id}/fields", project_id=project_id
+        )
+
+    def add_field(self, project_id: str, collection_id: str, name: str,
+                  type: str, key: str | None = None, required: bool = False,
+                  order: int | None = None, default_value: Any = None,
+                  attr: dict | None = None) -> Any:
+        body: dict = {"name": name, "type": type, "required": required}
+        if key is not None:
+            body["key"] = key
+        if order is not None:
+            body["order"] = order
+        if default_value is not None:
+            body["default_value"] = default_value
+        if attr is not None:
+            body["attr"] = attr
+        return self._api.request(
+            "POST", f"/collections/{collection_id}/fields", body, project_id
+        )
+
+    def update_field(self, project_id: str, collection_id: str, field_id: str,
+                     name: str | None = None, type: str | None = None,
+                     required: bool | None = None, order: int | None = None,
+                     visible: bool | None = None, default_value: Any = None,
+                     attr: dict | None = None) -> Any:
+        body: dict = {}
+        for k, v in (
+            ("name", name), ("type", type), ("required", required),
+            ("order", order), ("visible", visible),
+            ("default_value", default_value), ("attr", attr),
+        ):
+            if v is not None:
+                body[k] = v
+        return self._api.request(
+            "PATCH", f"/collections/{collection_id}/fields/{field_id}",
+            body, project_id,
+        )
+
+    def delete_field(self, project_id: str, collection_id: str,
+                     field_id: str) -> Any:
+        return self._api.request(
+            "DELETE", f"/collections/{collection_id}/fields/{field_id}",
+            project_id=project_id,
+        )
+
     # --- apps -------------------------------------------------------------
     def list_apps(self, project_id: str) -> Any:
         """The installable app catalog."""
