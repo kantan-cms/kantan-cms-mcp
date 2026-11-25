@@ -92,3 +92,11 @@ class KantanApi(Protocol):
         """Server-side copy of the generated website.zip into the Repository store
         under `name` (no local download; requires the Repository app)."""
         ...
+
+    # --- website generation (web editor) -------------------------------------
+    def generate_website_in_editor(
+        self, project_id: str, specification: str, media_collection_id: str | None = None
+    ) -> dict:
+        """Generate a whole site from scratch in the Web Editor (backend proxies
+        to the editor; blocks for minutes). Returns {ok, reply, changed, pages}."""
+        ...

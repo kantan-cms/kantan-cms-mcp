@@ -13,6 +13,9 @@ from kantan_cms_mcp.applications.use_cases.api_access import ApiAccessUseCase
 from kantan_cms_mcp.applications.use_cases.download_website import (
     DownloadWebsiteUseCase,
 )
+from kantan_cms_mcp.applications.use_cases.generate_website_in_editor import (
+    GenerateWebsiteInEditorUseCase,
+)
 from kantan_cms_mcp.applications.use_cases.hand_over_client import HandOverClientUseCase
 from kantan_cms_mcp.applications.use_cases.move_project import MoveProjectUseCase
 from kantan_cms_mcp.applications.use_cases.provision_and_generate import (
@@ -127,6 +130,28 @@ def register_tools(mcp: FastMCP) -> None:
         tenant must have an active subscription to generate."""
         return RegenerateWebsiteUseCase(_client()).execute(
             project_id, title, description, web_baker_id
+        )
+
+    @mcp.tool()
+    def generate_website_in_editor(
+        project_id: str,
+        specification: str,
+        media_collection_id: str | None = None,
+    ) -> dict:
+        """Generate a whole website from scratch in the Web Editor from a
+        plain-language specification — the same flow as the editor's in-app "AI
+        generate site" dialog. The AI picks a theme and builds a full multi-page
+        site, then saves it as the project's editor site.
+
+        `specification`: describe the business, the pages you want, the tone,
+        anything the AI should know. `media_collection_id` (optional): a media
+        collection whose images the editor prefers over stock photos.
+
+        Blocks until generation finishes (minutes). The project's tenant needs an
+        active subscription / AI credits. Requires the backend's WEB_EDITOR_URL to
+        be configured (otherwise returns a 'not configured' error)."""
+        return GenerateWebsiteInEditorUseCase(_client()).execute(
+            project_id, specification, media_collection_id
         )
 
     @mcp.tool()
