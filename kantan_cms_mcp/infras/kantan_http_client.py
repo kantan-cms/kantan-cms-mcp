@@ -4,6 +4,7 @@ direct database access — web_baker create/status go through backend routes."""
 from __future__ import annotations
 
 import base64
+from typing import Any
 
 import httpx
 
@@ -36,6 +37,28 @@ class KantanHttpClient:
         )
         resp.raise_for_status()
         return resp
+
+    # --- generic access (any /v1/app endpoint) -------------------------------
+    def request(self, method: str, path: str, body: dict | None = None,
+                project_id: str | None = None) -> Any:
+        """Call any /v1/app endpoint as the user. `path` is relative to
+        /v1/app (e.g. "/collections"); add a query string inline if needed.
+        Returns parsed JSON, or {ok, status} for an empty/non-JSON response."""
+        resp = self._request(
+            method.upper(), path, json=body, project_id=project_id
+        )
+        if resp.status_code == 204 or not resp.content:
+            return {"ok": True, "status": resp.status_code}
+        try:
+            return resp.json()
+        except ValueError:
+            return {"ok": True, "status": resp.status_code, "text": resp.text[:2000]}
+
+    def get_openapi(self) -> dict:
+        """The /v1/app OpenAPI document (for endpoint discovery)."""
+        resp = self._http.get("/openapi.json")
+        resp.raise_for_status()
+        return resp.json()
 
     # --- operations (map to /v1/app) -----------------------------------------
     def create_tenant(self, name: str) -> str:
