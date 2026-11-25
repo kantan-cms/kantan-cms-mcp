@@ -453,6 +453,46 @@ def register_tools(mcp: FastMCP) -> None:
             project_id, project_user_id
         )
 
+    # --- project settings ---------------------------------------------------
+    @mcp.tool()
+    def update_project(
+        project_id: str, name: str | None = None, description: str | None = None
+    ) -> object:
+        """Update a project's name and/or description (members only)."""
+        return ApiAccessUseCase(_client()).update_project(
+            project_id, name, description
+        )
+
+    @mcp.tool()
+    def get_notifications(project_id: str) -> object:
+        """Read the project's notification settings (email + form_submissions)."""
+        return ApiAccessUseCase(_client()).get_notifications(project_id)
+
+    @mcp.tool()
+    def set_notifications(
+        project_id: str,
+        email: str | None = None,
+        form_submissions: bool | None = None,
+    ) -> object:
+        """Set notification settings — the form-submission notification email
+        and/or whether form submissions notify. Only provided fields change."""
+        return ApiAccessUseCase(_client()).set_notifications(
+            project_id, email, form_submissions
+        )
+
+    @mcp.tool()
+    def get_feature_toggles(project_id: str) -> object:
+        """Read the project's feature toggles (disabled app/category list)."""
+        return ApiAccessUseCase(_client()).get_feature_toggles(project_id)
+
+    @mcp.tool()
+    def set_feature_toggles(project_id: str, disabled_categories: list) -> object:
+        """Set the project's disabled feature categories (full list; everything
+        not listed is enabled)."""
+        return ApiAccessUseCase(_client()).set_feature_toggles(
+            project_id, disabled_categories
+        )
+
     # --- API keys + build env (vault) + build -------------------------------
     @mcp.tool()
     def create_api_key(
