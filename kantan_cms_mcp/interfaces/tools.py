@@ -330,10 +330,21 @@ def register_tools(mcp: FastMCP) -> None:
         return ApiAccessUseCase(_client()).list_installed_apps(project_id)
 
     @mcp.tool()
-    def install_app(project_id: str, app_id: str) -> object:
-        """Install an app on the project (configure it afterwards with
-        configure_app). app_id comes from list_apps."""
-        return ApiAccessUseCase(_client()).install_app(project_id, app_id)
+    def install_app(
+        project_id: str, app_id: str, config: dict | None = None
+    ) -> object:
+        """Install an app on the project. Pass `config` to set the installation's
+        settings in the same step (otherwise configure later with configure_app).
+        app_id comes from list_apps."""
+        return ApiAccessUseCase(_client()).install_app(project_id, app_id, config)
+
+    @mcp.tool()
+    def activate_website_app(project_id: str, mode: str) -> object:
+        """Activate the Website Editor app in a specific mode via MCP (no in-app
+        chooser). mode = 'generator' (Created by Website Generator) or 'editor'
+        (Designed by Website Editor). Installs if needed and sets the mode;
+        idempotent (reuses an existing install)."""
+        return ApiAccessUseCase(_client()).activate_website_app(project_id, mode)
 
     @mcp.tool()
     def configure_app(project_id: str, installation_id: str, config: dict) -> object:

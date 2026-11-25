@@ -287,10 +287,56 @@ class ApiAccessUseCase:
     def list_installed_apps(self, project_id: str) -> Any:
         return self._api.request("GET", "/installations/", project_id=project_id)
 
-    def install_app(self, project_id: str, app_id: str) -> Any:
-        return self._api.request(
+    def install_app(self, project_id: str, app_id: str,
+                    config: dict | None = None) -> Any:
+        resp = self._api.request(
             "POST", "/installations/", {"app_id": app_id}, project_id
         )
+        # Optionally set the installation's config in the same step (e.g. the
+        # Website Editor's mode), so activation lands fully configured.
+        if config:
+            inst_id = (resp or {}).get("installation", {}).get("id")
+            if inst_id:
+                self.configure_app(project_id, inst_id, config)
+                resp = self._api.request(
+                    "GET", f"/installations/{inst_id}", project_id=project_id
+                )
+        return resp
+
+    def activate_website_app(self, project_id: str, mode: str) -> dict:
+        """Install (if needed) the Website Editor app and set its mode, so it's
+        activated via MCP in the chosen mode with no in-app chooser. mode is
+        'generator' (Created by Website Generator) or 'editor' (Designed by
+        Website Editor). Idempotent — reuses an existing install."""
+        norm = (mode or "").strip().lower()
+        if norm not in ("generator", "editor"):
+            return {"ok": False, "detail": "mode must be 'generator' or 'editor'"}
+        installed = self._api.request(
+            "GET", "/installations/", project_id=project_id
+        )
+        rows = (installed or {}).get("installations") or []
+        inst_id, existing = None, {}
+        for r in rows:
+            if r.get("app_id") == "web-baker":
+                inst_id, existing = r.get("id"), (r.get("config") or {})
+                break
+        if not inst_id:
+            resp = self._api.request(
+                "POST", "/installations/", {"app_id": "web-baker"}, project_id
+            )
+            inst_id = (resp or {}).get("installation", {}).get("id")
+        if not inst_id:
+            return {
+                "ok": False,
+                "detail": "Could not install or find the Website Editor app",
+            }
+        self.configure_app(project_id, inst_id, {**existing, "mode": norm})
+        return {
+            "ok": True,
+            "app_id": "web-baker",
+            "installation_id": inst_id,
+            "mode": norm,
+        }
 
     def configure_app(self, project_id: str, installation_id: str,
                       config: dict) -> Any:

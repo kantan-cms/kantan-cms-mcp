@@ -197,3 +197,60 @@ def test_configure_site_env_sets_key_and_project_id():
     assert api.calls[1][2] == {"kind": "secret", "value": out["api_key"]}
     assert api.calls[2][2] == {"kind": "env", "value": "p-1"}
     assert out["vars_set"] == ["CMS_API_KEY (secret)", "PROJECT_ID"]
+
+
+class RoutingApi:
+    """Fake that returns canned responses per (method, path) and records calls."""
+    def __init__(self, responses):
+        self.calls = []
+        self._responses = responses  # {(method, path): response}
+
+    def request(self, method, path, body=None, project_id=None):
+        self.calls.append((method, path, body, project_id))
+        return self._responses.get((method, path), {})
+
+    def get_openapi(self):
+        return {}
+
+
+def test_activate_website_app_fresh_install():
+    api = RoutingApi({
+        ("GET", "/installations/"): {"installations": []},
+        ("POST", "/installations/"): {"installation": {"id": "i1"}},
+    })
+    out = ApiAccessUseCase(api).activate_website_app("p-1", "editor")
+    assert out == {"ok": True, "app_id": "web-baker",
+                   "installation_id": "i1", "mode": "editor"}
+    # listed, installed web-baker, then PATCHed the mode
+    assert ("POST", "/installations/", {"app_id": "web-baker"}, "p-1") in api.calls
+    assert ("PATCH", "/installations/i1", {"config": {"mode": "editor"}}, "p-1") in api.calls
+
+
+def test_activate_website_app_already_installed_merges_config():
+    api = RoutingApi({
+        ("GET", "/installations/"): {
+            "installations": [
+                {"app_id": "web-baker", "id": "i9", "config": {"keep": 1}},
+            ]
+        },
+    })
+    out = ApiAccessUseCase(api).activate_website_app("p-1", "GENERATOR")
+    assert out["installation_id"] == "i9" and out["mode"] == "generator"
+    # no re-install; config merged (kept existing + mode)
+    assert all(c[0] != "POST" for c in api.calls)
+    assert ("PATCH", "/installations/i9",
+            {"config": {"keep": 1, "mode": "generator"}}, "p-1") in api.calls
+
+
+def test_activate_website_app_rejects_bad_mode():
+    api = RoutingApi({})
+    out = ApiAccessUseCase(api).activate_website_app("p-1", "nope")
+    assert out["ok"] is False and api.calls == []
+
+
+def test_install_app_with_config_configures():
+    api = RoutingApi({
+        ("POST", "/installations/"): {"installation": {"id": "i2"}},
+    })
+    ApiAccessUseCase(api).install_app("p-1", "buffer", {"token": "x"})
+    assert ("PATCH", "/installations/i2", {"config": {"token": "x"}}, "p-1") in api.calls

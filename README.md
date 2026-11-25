@@ -38,7 +38,8 @@ partial ones, so a batch never duplicates tenants/projects.
 - Collections: `list_collections(project_id)`, `create_collection(project_id, name, type, description?, icon?)` (`type` is `blog|form|media|dict|custom`; default fields are seeded, so it's usable immediately), `update_collection(…, name?, description?, icon?)` (type is immutable), `delete_collection(project_id, collection_id)` (cascades fields + records).
 - Records CRUD: `list_records(project_id, collection_id, page_size?, page_num?)`, `get_record(…, record_id)`, `create_record(project_id, collection_id, data)`, `update_record(…, record_id, data)`, `delete_record(…, record_id)` — `data` maps field `custom_key` → value.
 - Records bulk (no per-record app events): `bulk_create_records(project_id, collection_id, records)`, `bulk_update_records(…, records=[{id, data}])`, `bulk_delete_records(…, ids)`.
-- `list_apps(project_id)` (catalog) / `list_installed_apps(project_id)` / `install_app(project_id, app_id)` / `configure_app(project_id, installation_id, config)` / `uninstall_app(project_id, installation_id)`.
+- `list_apps(project_id)` (catalog) / `list_installed_apps(project_id)` / `install_app(project_id, app_id, config?)` (pass `config` to set settings at install) / `configure_app(project_id, installation_id, config)` / `uninstall_app(project_id, installation_id)`.
+- `activate_website_app(project_id, mode)` — activate the Website Editor in a mode via MCP (no in-app chooser): `mode` = `generator` (Created by Website Generator) or `editor` (Designed by Website Editor). Installs if needed, idempotent.
 
 ### Hosting, deploy & domains
 
