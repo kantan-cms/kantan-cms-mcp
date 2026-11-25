@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kantan-cms-mcp"
+version = "0.1.0"
+description = "Kantan CMS MCP server — manage your tenants, projects, and website generation via a per-user MCP key."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastmcp>=2.3.0",
+    # Loosened from ==0.27.2: fastmcp pulls a newer httpx, and the client is
+    # version-agnostic. Pinning both exactly made the resolver fail.
+    "httpx>=0.27",
+    "openpyxl>=3.1",
+]
+
+[project.scripts]
+kantan-cms-mcp = "kantan_cms_mcp.__main__:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.hatch.build.targets.wheel]
+# Ship only the server package — not the archived old MCP or the tests.
+packages = ["kantan_cms_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

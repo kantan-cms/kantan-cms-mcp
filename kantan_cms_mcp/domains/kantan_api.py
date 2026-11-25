@@ -1,6 +1,7 @@
 """The port (interface) the use cases depend on. The concrete implementation
 (infras/kantan_http_client.py) talks to the backend /v1/app surface as the
-operator. Keeping this abstract lets use cases be tested without HTTP."""
+signed-in user (via a per-user MCP key). Keeping this abstract lets use cases be
+tested without HTTP."""
 from __future__ import annotations
 
 from typing import Protocol
@@ -8,14 +9,14 @@ from typing import Protocol
 
 class KantanApi(Protocol):
     def create_tenant(self, name: str) -> str:
-        """Create a tenant (the operator becomes its owner). Returns tenant_id."""
+        """Create a tenant (the key's user becomes its owner). Returns tenant_id."""
         ...
 
     def create_project(
         self, name: str, description: str | None = None, tenant_id: str | None = None
     ) -> dict:
         """Create a project. With tenant_id, create it directly in that tenant
-        (the caller must own it); without, the operator's default tenant.
+        (the user must own it); without, the user's default tenant.
         Returns {id, tenant_id, ...}."""
         ...
 
@@ -38,10 +39,10 @@ class KantanApi(Protocol):
         ...
 
     def run_web_baker(self, project_id: str, web_baker_id: str, version: str = "v2") -> None:
-        """Kick off generation (needs the project to have a subscribed tenant)."""
+        """Kick off generation (needs the project's tenant to be subscribed)."""
         ...
 
-    def get_web_baker_status(self, web_baker_id: str) -> str:
+    def get_web_baker_status(self, project_id: str, web_baker_id: str) -> str:
         """Current status: new|navigate|running|baking|done|policy|error|failed."""
         ...
 

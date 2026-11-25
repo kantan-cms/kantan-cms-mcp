@@ -87,10 +87,12 @@ def register_tools(mcp: FastMCP) -> None:
         description: str | None = None,
         external_key: str | None = None,
     ) -> dict:
-        """Provision a lead AND generate their website end-to-end: build + generate
-        in your (subscribed) tenant, then move the finished project into the lead's
-        tenant. Blocks until generation finishes (minutes) or times out. Idempotent
-        and resumable via the ledger — a re-run continues from the last stage."""
+        """Provision a lead AND generate their website end-to-end: create a tenant
+        + project and generate in place. Blocks until generation finishes (minutes)
+        or times out. The tenant must have an active subscription to generate
+        (a brand-new one does not) — otherwise the result reports "no active
+        subscription". Idempotent and resumable via the ledger — a re-run continues
+        from the last stage."""
         lead = LeadClient(
             name=name,
             project_name=project_name,

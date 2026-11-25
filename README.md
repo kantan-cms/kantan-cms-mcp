@@ -1,45 +1,42 @@
-# Kantan CMS — Operator Provisioning MCP
+# Kantan CMS MCP
 
-An **operator-only** MCP server that automates agency-style lead provisioning on
-Kantan CMS: read a spreadsheet of lead clients and, for each, create a tenant +
-project (you become the owner), then hand finished tenants to paying clients.
-
-> ⚠️ This MCP acts as **one operator account** and can create tenants and
-> memberships. It is **not** a per-user integration and must **never** be exposed
-> to end users. For a user-facing, per-project content integration, use the
-> API-key `/v1/api` surface instead (the previous MCP, kept under `archive/`).
+An MCP server for managing your Kantan CMS tenants and projects and generating
+websites — straight from an MCP client (Claude Desktop, claude.ai, Claude Code).
+It authenticates with a **per-user MCP key** and acts as **you**, so everything
+it creates is owned and billed to your account.
 
 ## How it works
 
-It authenticates as the operator via Supabase and calls the backend user-JWT
-surface (`/v1/app`). Because **creating a tenant makes the caller its owner**,
-every tenant the operator creates is already owned by the operator — no special
-"attach my account" step is needed.
+Every tool call hits the backend user surface (`/v1/app`) with your MCP key in
+an `X-MCP-Key` header. The key resolves to your user, so the same
+ownership/quota/subscription rules apply as when you're signed in to the
+console. No Supabase credentials, no shared operator account, no direct database
+access.
 
-Provisioning is a clean one-hop: `create tenant` → `create project` **in that
-tenant** (the backend's create-project takes an optional owner-gated
-`tenant_id`). It is **idempotent/resumable** via a local JSON ledger keyed by
-each lead's `external_key` (else name): re-runs skip finished leads and resume
-partial ones, so a batch never duplicates tenants. Handover invites the client,
-who accepts and is then an owner. (`move_project` remains available as its own
-tool for relocating an existing project between tenants.)
+Create your key in the console: **Account → MCP → New key** (shown once).
+
+Provisioning is a clean one-hop — `create tenant` → `create project` **in that
+tenant** — and is **idempotent/resumable** via a local JSON ledger keyed by each
+lead's `external_key` (else name): re-runs skip finished leads and resume
+partial ones, so a batch never duplicates tenants/projects.
 
 ## Tools
 
 - `read_lead_clients(path)` — parse an `.xlsx` into rows (review before creating).
 - `provision_lead_client(name, project_name?, description?, client_email?, external_key?)` — one lead (tenant + project, no generation).
 - `provision_from_excel(path)` — every row; one result each, failures isolated.
-- `provision_and_generate(name, brief, project_name?, description?, external_key?)` — provision **and** generate the site: build + generate in your (subscribed) tenant, then move the finished project into the lead's tenant. Blocks until generation finishes (minutes) or times out; resumable.
-- `move_project(project_id, destination_tenant_id)` — relocate a project (backend enforces the rules).
-- `hand_over_client(tenant_id, client_email, role="owner")` — invite the client.
+- `provision_and_generate(name, brief, project_name?, description?, external_key?)` — create a tenant + project and generate the site **in place**. Blocks until generation finishes (minutes) or times out; resumable. The tenant must have an active subscription to generate (see below).
+- `move_project(project_id, destination_tenant_id)` — relocate a project (backend enforces owner-of-both, single-member).
+- `hand_over_client(tenant_id, client_email, role="owner")` — invite someone to a tenant.
+- `download_website(project_id, out_path, web_baker_id?)` — download the generated website.zip source.
+- `upload_website_to_repository(project_id, zip_path, name?, set_as_source?)` — upload an edited zip into the project's Repository store.
+- `import_generated_website_to_repository(project_id, name?)` — server-side copy of the generated site into the Repository store.
 
-### Why generation builds in *your* tenant
+### Generation needs a subscription
 
-A brand-new lead tenant has no subscription, so it can't run the generator
-(`no active subscription`). `provision_and_generate` therefore creates + generates
-the project in the **operator's** subscribed tenant (billing the build to you)
-and then **moves** the finished project into the lead's tenant via the
-owner-gated, single-member move.
+`run`/`provision_and_generate` bill the **project's own tenant**. A brand-new
+tenant has no subscription, so generation returns `no active subscription` —
+subscribe the tenant (or generate in one that's already subscribed) first.
 
 ## Architecture (mirrors the backend)
 
@@ -48,48 +45,70 @@ kantan_cms_mcp/
   interfaces/tools.py          MCP tools (entrypoints; like views)
   applications/use_cases/      orchestration (provision, hand_over, move, batch)
   domains/                     entities + the KantanApi port
-  infras/                      HTTP client (Supabase auth + /v1/app) + Excel reader
+  infras/                      HTTP client (X-MCP-Key + /v1/app) + Excel reader
 ```
 
 ## Run
 
+### With [uv](https://docs.astral.sh/uv/) (recommended — no manual venv)
+
 ```
-pip install -r requirements.txt
 export CMS_BASE_URL=https://api.kantan-cms.dev
-export SUPABASE_URL=... SUPABASE_ANON_KEY=...
-export KANTAN_OPERATOR_EMAIL=... KANTAN_OPERATOR_PASSWORD=...
-python main.py
+export KANTAN_MCP_KEY=mcp_...        # Account → MCP → New key
+uv run kantan-cms-mcp
 ```
 
-MCP client config:
+Or run it `npx`-style straight from a checkout:
+
+```
+uvx --from <absolute path to kantan-cms-mcp> kantan-cms-mcp
+```
+
+### With pip
+
+```
+pip install -r requirements.txt      # or: pip install .
+export CMS_BASE_URL=... KANTAN_MCP_KEY=mcp_...
+python main.py                        # or: python -m kantan_cms_mcp
+```
+
+### Add to an MCP client
+
+With `uv` (Claude Code example):
+
+```
+claude mcp add kantan-cms \
+  -e CMS_BASE_URL=https://api.kantan-cms.dev \
+  -e KANTAN_MCP_KEY=mcp_... \
+  -- uv run --directory <absolute path to kantan-cms-mcp> kantan-cms-mcp
+```
+
+Raw config (Claude Desktop etc.):
 
 ```json
 {
   "mcpServers": {
-    "kantan-cms-operator": {
-      "command": "python",
-      "args": ["<absolute path to kantan-cms-mcp>/main.py"],
+    "kantan-cms": {
+      "command": "uv",
+      "args": ["run", "--directory", "<absolute path to kantan-cms-mcp>", "kantan-cms-mcp"],
       "env": {
         "CMS_BASE_URL": "https://api.kantan-cms.dev",
-        "SUPABASE_URL": "<supabase url>",
-        "SUPABASE_ANON_KEY": "<anon key>",
-        "KANTAN_OPERATOR_EMAIL": "<operator email>",
-        "KANTAN_OPERATOR_PASSWORD": "<operator password>"
+        "KANTAN_MCP_KEY": "mcp_..."
       }
     }
   }
 }
 ```
 
-The ledger file defaults to `kantan_mcp_ledger.json` in the working directory;
-override with `KANTAN_MCP_LEDGER`.
+Plain-Python equivalent: `"command": "python", "args": ["<path>/main.py"]` with
+the same `env`. The ledger file defaults to `kantan_mcp_ledger.json` in the
+working directory; override with `KANTAN_MCP_LEDGER`.
 
-## Known follow-ups
+## Notes
 
-- **Content seeding** (create collections/records from the brief or sheet) before
-  generation, for richer sites.
-- Not runtime-tested against live credentials yet — smoke-test the operator
-  sign-in + a single `provision_lead_client`, then one `provision_and_generate`,
-  before batch use. Generation consumes the operator's AI credits.
+- **Keep your MCP key secret** — it acts as your full account. Revoke it any time
+  in the console (Account → MCP).
+- Not yet runtime-tested against live credentials — smoke-test key auth, then one
+  `provision_lead_client`, then one `provision_and_generate` before batch use.
 
 The previous API-key content MCP is preserved under [`archive/`](archive/).
