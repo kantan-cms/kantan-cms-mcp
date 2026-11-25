@@ -92,3 +92,15 @@ class KantanApi(Protocol):
         """Server-side copy of the generated website.zip into the Repository store
         under `name` (no local download; requires the Repository app)."""
         ...
+
+    # --- image generation ----------------------------------------------------
+    def generate_images_to_collection(
+        self,
+        project_id: str,
+        collection_id: str,
+        prompts: list[str],
+        aspect_ratio: str = "1:1",
+    ) -> dict:
+        """Generate images from prompts and store them as records in a media
+        collection. Returns {images: [{id, url, prompt}]}."""
+        ...

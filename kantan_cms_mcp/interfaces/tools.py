@@ -13,6 +13,9 @@ from kantan_cms_mcp.applications.use_cases.api_access import ApiAccessUseCase
 from kantan_cms_mcp.applications.use_cases.download_website import (
     DownloadWebsiteUseCase,
 )
+from kantan_cms_mcp.applications.use_cases.generate_images_to_collection import (
+    GenerateImagesToCollectionUseCase,
+)
 from kantan_cms_mcp.applications.use_cases.hand_over_client import HandOverClientUseCase
 from kantan_cms_mcp.applications.use_cases.move_project import MoveProjectUseCase
 from kantan_cms_mcp.applications.use_cases.provision_and_generate import (
@@ -310,6 +313,27 @@ def register_tools(mcp: FastMCP) -> None:
         """List records in a collection (paginated)."""
         return ApiAccessUseCase(_client()).list_records(
             project_id, collection_id, page_size, page_num
+        )
+
+    @mcp.tool()
+    def generate_images_to_collection(
+        project_id: str,
+        collection_id: str,
+        prompts: list[str],
+        aspect_ratio: str = "1:1",
+    ) -> dict:
+        """Generate images from `prompts` (one image each, max 10 per call) and
+        store them as records in a MEDIA collection, so they show up like any
+        uploaded media and can be referenced by the site generator.
+
+        The backend reuses its own image model (Gemini); each image is uploaded
+        to the content store and a media record is created pointing at it.
+        `aspect_ratio` applies to all prompts (e.g. "1:1", "16:9", "4:3").
+        Blocks until all images are generated (seconds each) and bills the
+        project's tenant per image. The collection must be of type `media`.
+        Returns { images: [{ id, url, prompt }] }."""
+        return GenerateImagesToCollectionUseCase(_client()).execute(
+            project_id, collection_id, prompts, aspect_ratio
         )
 
     @mcp.tool()

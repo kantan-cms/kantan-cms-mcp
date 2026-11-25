@@ -180,6 +180,28 @@ def test_request_posts_body(monkeypatch):
     assert seen["body"] == {"app_id": "buffer"}
 
 
+def test_generate_images_to_collection_posts_prompts(monkeypatch):
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/generate_images/"):
+            seen["method"] = request.method
+            seen["path"] = request.url.path
+            seen["project"] = request.headers.get("X-Project-Id")
+            seen["body"] = _json.loads(request.content)
+            return httpx.Response(200, json={"images": [{"id": "r1", "url": "u", "prompt": "a cat"}]})
+        return httpx.Response(404)
+
+    client = build_client(monkeypatch, handler)
+    out = client.generate_images_to_collection("p-1", "c-1", ["a cat"], "16:9")
+
+    assert out["images"][0]["id"] == "r1"
+    assert seen["method"] == "POST"
+    assert seen["path"] == "/v1/app/collections/c-1/records/generate_images/"
+    assert seen["project"] == "p-1"
+    assert seen["body"] == {"prompts": ["a cat"], "aspect_ratio": "16:9"}
+
+
 def test_get_openapi(monkeypatch):
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/openapi.json"):
