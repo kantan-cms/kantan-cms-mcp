@@ -57,6 +57,12 @@ partial ones, so a batch never duplicates tenants/projects.
 
 To stand up a repo-built site end to end: install the **Builder** and **Repository** apps (`install_app`) → `configure_site_env(...)` → upload the source (`upload_website_to_repository`) → `build_from_repository(...)` → `deploy_to_live(...)`. "Enable hosting" happens implicitly on deploy; enable the **Website Editor** / **Builder** via `install_app` (find ids with `list_apps`).
 
+### Project settings
+
+- `update_project(project_id, name?, description?)` — rename / edit description (members only).
+- `get_notifications(project_id)` / `set_notifications(project_id, email?, form_submissions?)` — form-submission notification settings.
+- `get_feature_toggles(project_id)` / `set_feature_toggles(project_id, disabled_categories)` — enable/disable app categories.
+
 ### Project membership (role-gated)
 
 - `list_project_members(project_id)` / `list_project_roles(project_id)`.

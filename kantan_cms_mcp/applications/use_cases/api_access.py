@@ -219,6 +219,40 @@ class ApiAccessUseCase:
             "DELETE", f"/project_user/{project_user_id}", project_id=project_id
         )
 
+    # --- project settings -------------------------------------------------
+    def update_project(self, project_id: str, name: str | None = None,
+                       description: str | None = None) -> Any:
+        body: dict = {}
+        if name is not None:
+            body["name"] = name
+        if description is not None:
+            body["description"] = description
+        return self._api.request(
+            "PATCH", f"/project/{project_id}", body, project_id
+        )
+
+    def get_notifications(self, project_id: str) -> Any:
+        return self._api.request("GET", "/notifications", project_id=project_id)
+
+    def set_notifications(self, project_id: str, email: str | None = None,
+                          form_submissions: bool | None = None) -> Any:
+        body: dict = {}
+        if email is not None:
+            body["email"] = email
+        if form_submissions is not None:
+            body["form_submissions"] = form_submissions
+        return self._api.request("PUT", "/notifications", body, project_id)
+
+    def get_feature_toggles(self, project_id: str) -> Any:
+        return self._api.request("GET", "/features", project_id=project_id)
+
+    def set_feature_toggles(self, project_id: str,
+                            disabled_categories: list) -> Any:
+        return self._api.request(
+            "PUT", "/features",
+            {"disabled_categories": disabled_categories}, project_id,
+        )
+
     # --- API keys ---------------------------------------------------------
     def create_api_key(self, project_id: str, name: str,
                        permissions: list | None = None,

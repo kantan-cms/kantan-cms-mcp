@@ -269,3 +269,23 @@ def test_set_hosting_routing():
     assert api.calls[-1] == (
         "PATCH", "/hosting/", {"url": "https://only-url.example.com"}, "p-1",
     )
+
+
+def test_project_settings_routing():
+    api = FakeApi()
+    uc = ApiAccessUseCase(api)
+    uc.update_project("p-1", name="New Name")
+    assert api.calls[-1] == ("PATCH", "/project/p-1", {"name": "New Name"}, "p-1")
+    uc.set_notifications("p-1", email="a@b.com", form_submissions=True)
+    assert api.calls[-1] == (
+        "PUT", "/notifications",
+        {"email": "a@b.com", "form_submissions": True}, "p-1",
+    )
+    uc.get_notifications("p-1")
+    assert api.calls[-1] == ("GET", "/notifications", None, "p-1")
+    uc.set_feature_toggles("p-1", ["integration", "advisor"])
+    assert api.calls[-1] == (
+        "PUT", "/features", {"disabled_categories": ["integration", "advisor"]}, "p-1",
+    )
+    uc.get_feature_toggles("p-1")
+    assert api.calls[-1] == ("GET", "/features", None, "p-1")
