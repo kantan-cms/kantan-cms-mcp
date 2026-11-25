@@ -55,11 +55,40 @@ class ApiAccessUseCase:
         body = {"name": name, "type": type, "description": description, "icon": icon}
         return self._api.request("POST", "/collections", body, project_id)
 
+    def list_records(self, project_id: str, collection_id: str,
+                     page_size: int = 100, page_num: int = 1) -> Any:
+        path = (
+            f"/collections/{collection_id}/records/"
+            f"?page_size={page_size}&page_num={page_num}"
+        )
+        return self._api.request("GET", path, project_id=project_id)
+
+    def get_record(self, project_id: str, collection_id: str,
+                   record_id: str) -> Any:
+        return self._api.request(
+            "GET", f"/collections/{collection_id}/records/{record_id}",
+            project_id=project_id,
+        )
+
     def create_record(self, project_id: str, collection_id: str,
                       data: dict) -> Any:
         # `data` is a flat map of field custom_key -> value.
         return self._api.request(
             "POST", f"/collections/{collection_id}/records/", data, project_id
+        )
+
+    def update_record(self, project_id: str, collection_id: str,
+                      record_id: str, data: dict) -> Any:
+        return self._api.request(
+            "PATCH", f"/collections/{collection_id}/records/{record_id}",
+            data, project_id,
+        )
+
+    def delete_record(self, project_id: str, collection_id: str,
+                      record_id: str) -> Any:
+        return self._api.request(
+            "DELETE", f"/collections/{collection_id}/records/{record_id}",
+            project_id=project_id,
         )
 
     # --- apps -------------------------------------------------------------
