@@ -185,16 +185,15 @@ def test_api_key_vault_build_routing():
     )
 
 
-def test_configure_site_env_sets_three_vars():
+def test_configure_site_env_sets_key_and_project_id():
     api = FakeApi()
-    out = ApiAccessUseCase(api).configure_site_env("p-1", "https://api.kantan-cms.dev")
-    # api_key create + 3 vault PUTs = 4 calls
+    out = ApiAccessUseCase(api).configure_site_env("p-1")
+    # api_key create + 2 vault PUTs = 3 calls (no CMS_BASE_URL)
     assert [c[:2] for c in api.calls] == [
         ("POST", "/api_key/"),
         ("PUT", "/vault/CMS_API_KEY"),
         ("PUT", "/vault/PROJECT_ID"),
-        ("PUT", "/vault/CMS_BASE_URL"),
     ]
     assert api.calls[1][2] == {"kind": "secret", "value": out["api_key"]}
     assert api.calls[2][2] == {"kind": "env", "value": "p-1"}
-    assert api.calls[3][2] == {"kind": "env", "value": "https://api.kantan-cms.dev"}
+    assert out["vars_set"] == ["CMS_API_KEY (secret)", "PROJECT_ID"]

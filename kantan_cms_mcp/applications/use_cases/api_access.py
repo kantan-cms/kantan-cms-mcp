@@ -249,23 +249,22 @@ class ApiAccessUseCase:
             "DELETE", f"/vault/{key}", project_id=project_id
         )
 
-    def configure_site_env(self, project_id: str, cms_base_url: str,
+    def configure_site_env(self, project_id: str,
                            key_name: str = "website-build",
                            permissions: list | None = None) -> dict:
         """One-shot setup so a built site (website-base-astro) can read the CMS:
-        create an API key and store it + the project id + base URL in the build
-        vault as CMS_API_KEY (secret), PROJECT_ID and CMS_BASE_URL. The builder
-        injects these at build time (GET /v1/api/build/env). Returns the API key
-        ONCE."""
+        create an API key and store it + the project id in the build vault as
+        CMS_API_KEY (secret) and PROJECT_ID. The builder injects these at build
+        time (GET /v1/api/build/env). Returns the API key ONCE. (CMS_BASE_URL is
+        not set — the site defaults it; add it with set_env_var if needed.)"""
         created = self.create_api_key(project_id, key_name, permissions)
         self.set_env_var(project_id, "CMS_API_KEY", created["key"], secret=True)
         self.set_env_var(project_id, "PROJECT_ID", project_id, secret=False)
-        self.set_env_var(project_id, "CMS_BASE_URL", cms_base_url, secret=False)
         return {
             "ok": True,
             "api_key_name": key_name,
             "api_key": created["key"],
-            "vars_set": ["CMS_API_KEY (secret)", "PROJECT_ID", "CMS_BASE_URL"],
+            "vars_set": ["CMS_API_KEY (secret)", "PROJECT_ID"],
         }
 
     # --- build from the Repository bundle ---------------------------------

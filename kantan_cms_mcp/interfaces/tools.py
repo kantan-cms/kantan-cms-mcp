@@ -432,15 +432,13 @@ def register_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     def configure_site_env(
-        project_id: str, cms_base_url: str, key_name: str = "website-build"
+        project_id: str, key_name: str = "website-build"
     ) -> object:
         """One-shot: create an API key and store CMS_API_KEY (secret) + PROJECT_ID
-        + CMS_BASE_URL in the build vault, so a generated/base website can read
-        the CMS. The builder injects these at build time. Returns the key ONCE.
-        cms_base_url is the CMS API base (e.g. https://api.kantan-cms.dev)."""
-        return ApiAccessUseCase(_client()).configure_site_env(
-            project_id, cms_base_url, key_name
-        )
+        in the build vault, so a generated/base website can read the CMS. The
+        builder injects these at build time. Returns the key ONCE. (CMS_BASE_URL
+        is not set — the site defaults it; use set_env_var if you need it.)"""
+        return ApiAccessUseCase(_client()).configure_site_env(project_id, key_name)
 
     @mcp.tool()
     def build_from_repository(
