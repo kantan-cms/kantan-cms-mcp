@@ -154,3 +154,47 @@ def test_domain_and_membership_routing():
     )
     uc.remove_project_member("p-1", "pu1")
     assert api.calls[-1] == ("DELETE", "/project_user/pu1", None, "p-1")
+
+
+def test_api_key_vault_build_routing():
+    api = FakeApi()
+    uc = ApiAccessUseCase(api)
+
+    created = uc.create_api_key("p-1", "ci", permissions=["records:read"])
+    method, path, body, pid = api.calls[-1]
+    assert (method, path, pid) == ("POST", "/api_key/", "p-1")
+    key = body["api_keys"][0]
+    assert key["name"] == "ci" and key["permissions"] == ["records:read"]
+    assert key["key"].startswith("kcms_") and created["key"] == key["key"]
+
+    uc.set_env_var("p-1", "CMS_API_KEY", "secret-val", secret=True)
+    assert api.calls[-1] == (
+        "PUT", "/vault/CMS_API_KEY", {"kind": "secret", "value": "secret-val"}, "p-1",
+    )
+    uc.set_env_var("p-1", "PROJECT_ID", "p-1")
+    assert api.calls[-1] == (
+        "PUT", "/vault/PROJECT_ID", {"kind": "env", "value": "p-1"}, "p-1",
+    )
+    uc.delete_env_var("p-1", "PROJECT_ID")
+    assert api.calls[-1] == ("DELETE", "/vault/PROJECT_ID", None, "p-1")
+
+    uc.build_from_repository("p-1", "site.zip")
+    assert api.calls[-1] == (
+        "POST", "/hosting/build/repository/",
+        {"bundle": "site.zip", "runtime": "node22", "script_file": "build.sh"}, "p-1",
+    )
+
+
+def test_configure_site_env_sets_three_vars():
+    api = FakeApi()
+    out = ApiAccessUseCase(api).configure_site_env("p-1", "https://api.kantan-cms.dev")
+    # api_key create + 3 vault PUTs = 4 calls
+    assert [c[:2] for c in api.calls] == [
+        ("POST", "/api_key/"),
+        ("PUT", "/vault/CMS_API_KEY"),
+        ("PUT", "/vault/PROJECT_ID"),
+        ("PUT", "/vault/CMS_BASE_URL"),
+    ]
+    assert api.calls[1][2] == {"kind": "secret", "value": out["api_key"]}
+    assert api.calls[2][2] == {"kind": "env", "value": "p-1"}
+    assert api.calls[3][2] == {"kind": "env", "value": "https://api.kantan-cms.dev"}

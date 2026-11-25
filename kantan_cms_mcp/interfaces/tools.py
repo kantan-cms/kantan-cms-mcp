@@ -395,6 +395,67 @@ def register_tools(mcp: FastMCP) -> None:
             project_id, project_user_id
         )
 
+    # --- API keys + build env (vault) + build -------------------------------
+    @mcp.tool()
+    def create_api_key(
+        project_id: str,
+        name: str,
+        permissions: list | None = None,
+        expires_at: str | None = None,
+    ) -> object:
+        """Generate a project API key (for /v1/api + /v1/public). Returns the raw
+        token ONCE (the backend stores only its hash). permissions default to
+        ["*"]; pass narrower scopes (e.g. ["records:read"]) for least privilege."""
+        return ApiAccessUseCase(_client()).create_api_key(
+            project_id, name, permissions, expires_at
+        )
+
+    @mcp.tool()
+    def list_env_vars(project_id: str) -> object:
+        """List the project's build env vars (secret values are write-only)."""
+        return ApiAccessUseCase(_client()).list_env_vars(project_id)
+
+    @mcp.tool()
+    def set_env_var(
+        project_id: str, key: str, value: str, secret: bool = False
+    ) -> object:
+        """Set a project env var the website build injects at build time
+        (secret=True stores it write-only, e.g. for an API key)."""
+        return ApiAccessUseCase(_client()).set_env_var(
+            project_id, key, value, secret
+        )
+
+    @mcp.tool()
+    def delete_env_var(project_id: str, key: str) -> object:
+        """Delete a project build env var."""
+        return ApiAccessUseCase(_client()).delete_env_var(project_id, key)
+
+    @mcp.tool()
+    def configure_site_env(
+        project_id: str, cms_base_url: str, key_name: str = "website-build"
+    ) -> object:
+        """One-shot: create an API key and store CMS_API_KEY (secret) + PROJECT_ID
+        + CMS_BASE_URL in the build vault, so a generated/base website can read
+        the CMS. The builder injects these at build time. Returns the key ONCE.
+        cms_base_url is the CMS API base (e.g. https://api.kantan-cms.dev)."""
+        return ApiAccessUseCase(_client()).configure_site_env(
+            project_id, cms_base_url, key_name
+        )
+
+    @mcp.tool()
+    def build_from_repository(
+        project_id: str,
+        bundle: str,
+        runtime: str = "node22",
+        script_file: str = "build.sh",
+    ) -> object:
+        """Trigger a Kantan Builder build from a Repository-app zip bundle
+        (requires the Repository app active). `bundle` is the stored zip name
+        (see the repository list). Follow with deploy_to_live to publish."""
+        return ApiAccessUseCase(_client()).build_from_repository(
+            project_id, bundle, runtime, script_file
+        )
+
     @mcp.tool()
     def hand_over_client(tenant_id: str, client_email: str, role: str = "owner") -> dict:
         """Invite the paying client to their tenant (they must accept before the

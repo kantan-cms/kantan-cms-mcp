@@ -45,6 +45,15 @@ partial ones, so a batch never duplicates tenants/projects.
 - `delete_preview(project_id)` / `delete_hosting(project_id)` (teardown; Cloudflare domain settings are kept on hosting delete).
 - Custom domain: `set_custom_domain(project_id, hostname)` (returns TXT validation records), `list_custom_hostnames(project_id)`, `get_domain_status(project_id, hostname_id)` (TXT ownership + SSL validation records to add to DNS). Note: the fixed CNAME *target* the customer points at isn't surfaced by the backend yet.
 
+### API keys, build env & building a site
+
+- `create_api_key(project_id, name, permissions?, expires_at?)` — generate a project API key; returns the token **once** (permissions default `["*"]`).
+- Build env vars (the per-project vault the builder injects at build time): `set_env_var(project_id, key, value, secret?)`, `list_env_vars(project_id)`, `delete_env_var(project_id, key)`.
+- `configure_site_env(project_id, cms_base_url, key_name?)` — one-shot: make an API key and store `CMS_API_KEY` (secret) + `PROJECT_ID` + `CMS_BASE_URL` in the vault, so a built site (e.g. `website-base-astro`) can read the CMS. The builder injects these via `GET /v1/api/build/env` at build time.
+- `build_from_repository(project_id, bundle, runtime?, script_file?)` — trigger a Kantan Builder build from a Repository-app zip bundle. Then `deploy_to_preview`/`deploy_to_live` to publish.
+
+To stand up a repo-built site end to end: install the **Builder** and **Repository** apps (`install_app`) → `configure_site_env(...)` → upload the source (`upload_website_to_repository`) → `build_from_repository(...)` → `deploy_to_live(...)`. "Enable hosting" happens implicitly on deploy; enable the **Website Editor** / **Builder** via `install_app` (find ids with `list_apps`).
+
 ### Project membership (role-gated)
 
 - `list_project_members(project_id)` / `list_project_roles(project_id)`.
