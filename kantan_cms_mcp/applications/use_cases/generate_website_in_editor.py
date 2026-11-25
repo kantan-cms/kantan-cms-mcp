@@ -23,10 +23,16 @@ class GenerateWebsiteInEditorUseCase:
         project_id: str,
         specification: str,
         media_collection_id: str | None = None,
+        blog_collection_id: str | None = None,
+        form_collection_id: str | None = None,
     ) -> dict:
         spec = (specification or "").strip()
         if not spec:
             return {"ok": False, "detail": "specification is required"}
         return self._api.generate_website_in_editor(
-            project_id, spec, media_collection_id
+            project_id,
+            spec,
+            media_collection_id,
+            blog_collection_id,
+            form_collection_id,
         )

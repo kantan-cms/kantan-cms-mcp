@@ -144,6 +144,8 @@ def register_tools(mcp: FastMCP) -> None:
         project_id: str,
         specification: str,
         media_collection_id: str | None = None,
+        blog_collection_id: str | None = None,
+        form_collection_id: str | None = None,
     ) -> dict:
         """Generate a whole website from scratch in the Web Editor from a
         plain-language specification — the same flow as the editor's in-app "AI
@@ -151,14 +153,24 @@ def register_tools(mcp: FastMCP) -> None:
         site, then saves it as the project's editor site.
 
         `specification`: describe the business, the pages you want, the tone,
-        anything the AI should know. `media_collection_id` (optional): a media
-        collection whose images the editor prefers over stock photos.
+        anything the AI should know.
+
+        Optional collection ids (NOT names — pass the collection's id from
+        list_collections) wire the generated site to the CMS:
+        - `media_collection_id`: images the editor prefers over stock photos.
+        - `blog_collection_id`: a blog page is created and wired to this
+          collection's posts.
+        - `form_collection_id`: a contact form is added and connected to it.
 
         Blocks until generation finishes (minutes). The project's tenant needs an
         active subscription / AI credits. Requires the backend's WEB_EDITOR_URL to
         be configured (otherwise returns a 'not configured' error)."""
         return GenerateWebsiteInEditorUseCase(_client()).execute(
-            project_id, specification, media_collection_id
+            project_id,
+            specification,
+            media_collection_id,
+            blog_collection_id,
+            form_collection_id,
         )
 
     @mcp.tool()

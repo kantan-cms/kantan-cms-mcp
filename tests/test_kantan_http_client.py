@@ -217,7 +217,7 @@ def test_generate_website_in_editor_posts_spec(monkeypatch):
         return httpx.Response(404)
 
     client = build_client(monkeypatch, handler)
-    out = client.generate_website_in_editor("p-1", "A bakery site", "media-1")
+    out = client.generate_website_in_editor("p-1", "A bakery site", "media-1", "blog-1", "form-1")
 
     assert out["ok"] is True
     assert seen["method"] == "POST"
@@ -226,6 +226,8 @@ def test_generate_website_in_editor_posts_spec(monkeypatch):
     assert seen["body"] == {
         "specification": "A bakery site",
         "media_collection_id": "media-1",
+        "blog_collection_id": "blog-1",
+        "form_collection_id": "form-1",
     }
 
 
