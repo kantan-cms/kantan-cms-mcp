@@ -254,3 +254,18 @@ def test_install_app_with_config_configures():
     })
     ApiAccessUseCase(api).install_app("p-1", "buffer", {"token": "x"})
     assert ("PATCH", "/installations/i2", {"config": {"token": "x"}}, "p-1") in api.calls
+
+
+def test_set_hosting_routing():
+    api = FakeApi()
+    uc = ApiAccessUseCase(api)
+    uc.set_hosting("p-1", enabled=True, url="https://x.example.com")
+    assert api.calls[-1] == (
+        "PATCH", "/hosting/", {"enabled": True, "url": "https://x.example.com"}, "p-1",
+    )
+    uc.set_hosting("p-1", enabled=False)
+    assert api.calls[-1] == ("PATCH", "/hosting/", {"enabled": False}, "p-1")
+    uc.set_hosting("p-1", url="https://only-url.example.com")
+    assert api.calls[-1] == (
+        "PATCH", "/hosting/", {"url": "https://only-url.example.com"}, "p-1",
+    )
