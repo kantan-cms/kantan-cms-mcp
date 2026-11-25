@@ -191,6 +191,24 @@ def register_tools(mcp: FastMCP) -> None:
         )
 
     @mcp.tool()
+    def update_collection(
+        project_id: str,
+        collection_id: str,
+        name: str | None = None,
+        description: str | None = None,
+        icon: str | None = None,
+    ) -> object:
+        """Update a collection's name/description/icon (its type is immutable)."""
+        return ApiAccessUseCase(_client()).update_collection(
+            project_id, collection_id, name, description, icon
+        )
+
+    @mcp.tool()
+    def delete_collection(project_id: str, collection_id: str) -> object:
+        """Delete a collection — its fields and records go with it (DB cascade)."""
+        return ApiAccessUseCase(_client()).delete_collection(project_id, collection_id)
+
+    @mcp.tool()
     def list_records(
         project_id: str,
         collection_id: str,
@@ -235,6 +253,36 @@ def register_tools(mcp: FastMCP) -> None:
         )
 
     @mcp.tool()
+    def bulk_create_records(
+        project_id: str, collection_id: str, records: list
+    ) -> object:
+        """Create many records at once. `records` is a list of flat field maps
+        (custom_key -> value). Faster than one-by-one; does NOT fire per-record
+        app events."""
+        return ApiAccessUseCase(_client()).bulk_create_records(
+            project_id, collection_id, records
+        )
+
+    @mcp.tool()
+    def bulk_update_records(
+        project_id: str, collection_id: str, records: list
+    ) -> object:
+        """Update many records at once. `records` is a list of
+        {"id": <record_id>, "data": {field: value}}. Does NOT fire events."""
+        return ApiAccessUseCase(_client()).bulk_update_records(
+            project_id, collection_id, records
+        )
+
+    @mcp.tool()
+    def bulk_delete_records(
+        project_id: str, collection_id: str, ids: list
+    ) -> object:
+        """Delete many records by id in one call. Does NOT fire events."""
+        return ApiAccessUseCase(_client()).bulk_delete_records(
+            project_id, collection_id, ids
+        )
+
+    @mcp.tool()
     def list_apps(project_id: str) -> object:
         """The installable app catalog (app ids + metadata)."""
         return ApiAccessUseCase(_client()).list_apps(project_id)
@@ -262,6 +310,90 @@ def register_tools(mcp: FastMCP) -> None:
     def uninstall_app(project_id: str, installation_id: str) -> object:
         """Remove an installed app from the project."""
         return ApiAccessUseCase(_client()).uninstall_app(project_id, installation_id)
+
+    # --- hosting / deploy / preview -----------------------------------------
+    @mcp.tool()
+    def deploy_to_preview(project_id: str, web_baker_id: str) -> object:
+        """Publish the generated build to the project's preview site
+        (web_baker_id from list_api_endpoints/the generation result or
+        latest_web_baker_id)."""
+        return ApiAccessUseCase(_client()).deploy_to_preview(project_id, web_baker_id)
+
+    @mcp.tool()
+    def deploy_to_live(project_id: str) -> object:
+        """Promote the current preview to the live/production host."""
+        return ApiAccessUseCase(_client()).deploy_to_live(project_id)
+
+    @mcp.tool()
+    def get_hosting_status(project_id: str, web_baker_id: str) -> object:
+        """Hosting status + live URL for the project's build."""
+        return ApiAccessUseCase(_client()).get_hosting_status(project_id, web_baker_id)
+
+    @mcp.tool()
+    def delete_preview(project_id: str) -> object:
+        """Tear down the preview site (production hosting untouched)."""
+        return ApiAccessUseCase(_client()).delete_preview(project_id)
+
+    @mcp.tool()
+    def delete_hosting(project_id: str) -> object:
+        """Tear down live hosting (Cloudflare domain settings are kept so you
+        can redeploy without re-registering)."""
+        return ApiAccessUseCase(_client()).delete_hosting(project_id)
+
+    # --- custom domain (CNAME / TXT validation) -----------------------------
+    @mcp.tool()
+    def set_custom_domain(project_id: str, hostname: str) -> object:
+        """Register a custom domain for the project. Returns the Cloudflare
+        settings, including the TXT validation records to add to DNS. After the
+        customer adds the records, poll get_domain_status to confirm."""
+        return ApiAccessUseCase(_client()).set_custom_domain(project_id, hostname)
+
+    @mcp.tool()
+    def list_custom_hostnames(project_id: str) -> object:
+        """List the project's custom hostnames and their SSL/validation status."""
+        return ApiAccessUseCase(_client()).list_custom_hostnames(project_id)
+
+    @mcp.tool()
+    def get_domain_status(project_id: str, hostname_id: str) -> object:
+        """Live domain/SSL status, including the TXT ownership_verification and
+        ssl.validation_records the customer must add to DNS to validate."""
+        return ApiAccessUseCase(_client()).get_domain_status(project_id, hostname_id)
+
+    # --- project membership -------------------------------------------------
+    @mcp.tool()
+    def list_project_members(project_id: str) -> object:
+        """List the users attached to a project."""
+        return ApiAccessUseCase(_client()).list_project_members(project_id)
+
+    @mcp.tool()
+    def list_project_roles(project_id: str) -> object:
+        """List assignable project roles (id + name)."""
+        return ApiAccessUseCase(_client()).list_project_roles(project_id)
+
+    @mcp.tool()
+    def connect_user_to_project(project_id: str, user_id: str) -> object:
+        """Add an existing tenant member to the project (as 'member'; change with
+        set_project_member_role). The user must already belong to the project's
+        tenant. Subject to the backend's role checks."""
+        return ApiAccessUseCase(_client()).connect_user_to_project(project_id, user_id)
+
+    @mcp.tool()
+    def set_project_member_role(
+        project_id: str, project_user_id: str, project_role_id: str
+    ) -> object:
+        """Change a project member's role (ids from list_project_members /
+        list_project_roles)."""
+        return ApiAccessUseCase(_client()).set_project_member_role(
+            project_id, project_user_id, project_role_id
+        )
+
+    @mcp.tool()
+    def remove_project_member(project_id: str, project_user_id: str) -> object:
+        """Remove a user from a project (project_user_id from
+        list_project_members)."""
+        return ApiAccessUseCase(_client()).remove_project_member(
+            project_id, project_user_id
+        )
 
     @mcp.tool()
     def hand_over_client(tenant_id: str, client_email: str, role: str = "owner") -> dict:

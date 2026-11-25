@@ -95,3 +95,62 @@ def test_record_crud_routing():
 
     uc.delete_record("p-1", "c1", "r9")
     assert api.calls[-1] == ("DELETE", "/collections/c1/records/r9", None, "p-1")
+
+
+def test_collection_update_delete_routing():
+    api = FakeApi()
+    uc = ApiAccessUseCase(api)
+    uc.update_collection("p-1", "c1", name="New", icon=None)
+    assert api.calls[-1] == ("PATCH", "/collections/c1", {"name": "New"}, "p-1")
+    uc.delete_collection("p-1", "c1")
+    assert api.calls[-1] == ("DELETE", "/collections/c1", None, "p-1")
+
+
+def test_bulk_records_routing():
+    api = FakeApi()
+    uc = ApiAccessUseCase(api)
+    uc.bulk_create_records("p-1", "c1", [{"t": 1}])
+    assert api.calls[-1] == (
+        "POST", "/collections/c1/records/bulk", {"records": [{"t": 1}]}, "p-1",
+    )
+    uc.bulk_update_records("p-1", "c1", [{"id": "r1", "data": {"t": 2}}])
+    assert api.calls[-1][:2] == ("PATCH", "/collections/c1/records/bulk")
+    uc.bulk_delete_records("p-1", "c1", ["r1", "r2"])
+    assert api.calls[-1] == (
+        "POST", "/collections/c1/records/bulk/delete", {"ids": ["r1", "r2"]}, "p-1",
+    )
+
+
+def test_hosting_routing():
+    api = FakeApi()
+    uc = ApiAccessUseCase(api)
+    uc.deploy_to_preview("p-1", "wb1")
+    assert api.calls[-1] == ("POST", "/web_baker/wb1/deploy", None, "p-1")
+    uc.deploy_to_live("p-1")
+    assert api.calls[-1] == ("POST", "/hosting/deploy/", None, "p-1")
+    uc.delete_preview("p-1")
+    assert api.calls[-1] == ("DELETE", "/preview/", None, "p-1")
+    uc.delete_hosting("p-1")
+    assert api.calls[-1] == ("DELETE", "/hosting/", None, "p-1")
+
+
+def test_domain_and_membership_routing():
+    api = FakeApi()
+    uc = ApiAccessUseCase(api)
+    uc.set_custom_domain("p-1", "www.example.com")
+    assert api.calls[-1] == (
+        "POST", "/hosting/domain/", {"hostname": "www.example.com"}, "p-1",
+    )
+    uc.get_domain_status("p-1", "h1")
+    assert api.calls[-1] == ("GET", "/hosting/hostnames/h1", None, "p-1")
+    uc.connect_user_to_project("p-1", "u9")
+    assert api.calls[-1] == (
+        "POST", "/project_user/",
+        {"project_user": {"project_id": "p-1", "user_id": "u9"}}, "p-1",
+    )
+    uc.set_project_member_role("p-1", "pu1", "role1")
+    assert api.calls[-1] == (
+        "PUT", "/project_user/pu1/role", {"project_role_id": "role1"}, "p-1",
+    )
+    uc.remove_project_member("p-1", "pu1")
+    assert api.calls[-1] == ("DELETE", "/project_user/pu1", None, "p-1")
