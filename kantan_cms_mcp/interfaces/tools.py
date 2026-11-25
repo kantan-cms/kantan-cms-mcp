@@ -27,6 +27,9 @@ from kantan_cms_mcp.applications.use_cases.provision_lead_client import (
 from kantan_cms_mcp.applications.use_cases.publish_website_to_repository import (
     PublishWebsiteToRepositoryUseCase,
 )
+from kantan_cms_mcp.applications.use_cases.regenerate_website import (
+    RegenerateWebsiteUseCase,
+)
 from kantan_cms_mcp.config import load_config
 from kantan_cms_mcp.domains.entities import LeadClient
 from kantan_cms_mcp.infras.excel_reader import read_lead_clients as _read_leads
@@ -109,6 +112,40 @@ def register_tools(mcp: FastMCP) -> None:
         single-member, and member-in-destination; it fails with a clear message
         otherwise."""
         return MoveProjectUseCase(_client()).execute(project_id, destination_tenant_id)
+
+    @mcp.tool()
+    def regenerate_website(
+        project_id: str,
+        title: str,
+        description: str | None = None,
+        web_baker_id: str | None = None,
+    ) -> dict:
+        """Regenerate an existing project's website against its CURRENT
+        collections (a project has one web_baker, so you can't create another).
+        Rebuilds the instruction, resets, re-runs, and blocks to completion.
+        Use this instead of POST /web_baker/ (which 400s when one exists). The
+        tenant must have an active subscription to generate."""
+        return RegenerateWebsiteUseCase(_client()).execute(
+            project_id, title, description, web_baker_id
+        )
+
+    @mcp.tool()
+    def reset_website(project_id: str, web_baker_id: str) -> object:
+        """Reset a web_baker back to 'new' (keeps its instruction). Pair with
+        run_website to re-run the stored instruction."""
+        ApiAccessUseCase(_client()).call(
+            "POST", f"/web_baker/{web_baker_id}/reset", project_id=project_id
+        )
+        return {"ok": True}
+
+    @mcp.tool()
+    def run_website(project_id: str, web_baker_id: str, version: str = "v2") -> object:
+        """Kick off generation for an existing web_baker (needs an active
+        subscription on the tenant)."""
+        return ApiAccessUseCase(_client()).call(
+            "POST", f"/web_baker/{web_baker_id}/run",
+            {"version": version}, project_id,
+        )
 
     @mcp.tool()
     def download_website(

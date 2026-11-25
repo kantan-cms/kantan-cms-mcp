@@ -55,6 +55,17 @@ class KantanApi(Protocol):
         """Current status: new|navigate|running|baking|done|policy|error|failed."""
         ...
 
+    def set_web_baker_instruction(
+        self, project_id: str, web_baker_id: str, instruction: dict
+    ) -> None:
+        """Replace a web_baker's instruction (to regenerate against new
+        collections)."""
+        ...
+
+    def reset_web_baker(self, project_id: str, web_baker_id: str) -> None:
+        """Reset a web_baker back to 'new' (keeps its instruction)."""
+        ...
+
     # --- website source download / repository upload -------------------------
     def latest_web_baker_id(self, project_id: str) -> str | None:
         """The project's most recent web_baker row id (or None if it has none)."""
