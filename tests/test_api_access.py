@@ -74,3 +74,24 @@ def test_create_record_routing():
         {"title": "Hello"},
         "p-1",
     )
+
+
+def test_record_crud_routing():
+    api = FakeApi()
+    uc = ApiAccessUseCase(api)
+
+    uc.list_records("p-1", "c1", page_size=10, page_num=2)
+    assert api.calls[-1] == (
+        "GET", "/collections/c1/records/?page_size=10&page_num=2", None, "p-1",
+    )
+
+    uc.get_record("p-1", "c1", "r9")
+    assert api.calls[-1] == ("GET", "/collections/c1/records/r9", None, "p-1")
+
+    uc.update_record("p-1", "c1", "r9", {"title": "New"})
+    assert api.calls[-1] == (
+        "PATCH", "/collections/c1/records/r9", {"title": "New"}, "p-1",
+    )
+
+    uc.delete_record("p-1", "c1", "r9")
+    assert api.calls[-1] == ("DELETE", "/collections/c1/records/r9", None, "p-1")

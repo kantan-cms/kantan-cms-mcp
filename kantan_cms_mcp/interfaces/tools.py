@@ -191,11 +191,47 @@ def register_tools(mcp: FastMCP) -> None:
         )
 
     @mcp.tool()
+    def list_records(
+        project_id: str,
+        collection_id: str,
+        page_size: int = 100,
+        page_num: int = 1,
+    ) -> object:
+        """List records in a collection (paginated)."""
+        return ApiAccessUseCase(_client()).list_records(
+            project_id, collection_id, page_size, page_num
+        )
+
+    @mcp.tool()
+    def get_record(project_id: str, collection_id: str, record_id: str) -> object:
+        """Fetch one record by id."""
+        return ApiAccessUseCase(_client()).get_record(
+            project_id, collection_id, record_id
+        )
+
+    @mcp.tool()
     def create_record(project_id: str, collection_id: str, data: dict) -> object:
         """Create a record in a collection. `data` is a flat map of field
         custom_key -> value (match the collection's fields)."""
         return ApiAccessUseCase(_client()).create_record(
             project_id, collection_id, data
+        )
+
+    @mcp.tool()
+    def update_record(
+        project_id: str, collection_id: str, record_id: str, data: dict
+    ) -> object:
+        """Update a record. `data` holds the fields to change (field
+        custom_key -> value)."""
+        return ApiAccessUseCase(_client()).update_record(
+            project_id, collection_id, record_id, data
+        )
+
+    @mcp.tool()
+    def delete_record(project_id: str, collection_id: str, record_id: str) -> object:
+        """Delete a record by id."""
+        return ApiAccessUseCase(_client()).delete_record(
+            project_id, collection_id, record_id
         )
 
     @mcp.tool()

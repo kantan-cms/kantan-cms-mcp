@@ -34,8 +34,8 @@ partial ones, so a batch never duplicates tenants/projects.
 
 ### Content & apps
 
-- `list_collections(project_id)` / `create_collection(project_id, name, type, description?, icon?)` — `type` is `blog|form|media|dict|custom`; default fields are seeded, so it's usable immediately (e.g. for generation).
-- `create_record(project_id, collection_id, data)` — `data` maps field `custom_key` → value.
+- `list_collections(project_id)` / `create_collection(project_id, name, type, description?, icon?)` — `type` is `blog|form|media|dict|custom`; default fields are seeded, so it's usable immediately (e.g. for generation). (Collections have no update/delete on `/v1/app`; `duplicate` is reachable via `kantan_request`.)
+- Records CRUD: `list_records(project_id, collection_id, page_size?, page_num?)`, `get_record(…, record_id)`, `create_record(project_id, collection_id, data)`, `update_record(…, record_id, data)`, `delete_record(…, record_id)` — `data` maps field `custom_key` → value.
 - `list_apps(project_id)` (catalog) / `list_installed_apps(project_id)` / `install_app(project_id, app_id)` / `configure_app(project_id, installation_id, config)` / `uninstall_app(project_id, installation_id)`.
 
 ### Flexible access (escape hatch)
