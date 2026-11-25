@@ -12,26 +12,33 @@ class FakeApi:
         self._result = result or {"ok": True, "changed": [], "pages": []}
 
     def generate_website_in_editor(
-        self, project_id, specification, media_collection_id=None
+        self,
+        project_id,
+        specification,
+        media_collection_id=None,
+        blog_collection_id=None,
+        form_collection_id=None,
     ):
-        self.calls.append((project_id, specification, media_collection_id))
+        self.calls.append(
+            (project_id, specification, media_collection_id, blog_collection_id, form_collection_id)
+        )
         return self._result
 
 
-def test_passes_spec_and_media_collection():
+def test_passes_spec_and_collections():
     api = FakeApi(result={"ok": True, "pages": [{"path": "/", "title": "Home"}]})
     out = GenerateWebsiteInEditorUseCase(api).execute(
-        "p-1", "  A bakery in Kyoto  ", "media-1"
+        "p-1", "  A bakery in Kyoto  ", "media-1", "blog-1", "form-1"
     )
     assert out["ok"] is True
     # specification is trimmed before being sent
-    assert api.calls == [("p-1", "A bakery in Kyoto", "media-1")]
+    assert api.calls == [("p-1", "A bakery in Kyoto", "media-1", "blog-1", "form-1")]
 
 
-def test_media_collection_optional():
+def test_collections_optional():
     api = FakeApi()
     GenerateWebsiteInEditorUseCase(api).execute("p-1", "A site")
-    assert api.calls == [("p-1", "A site", None)]
+    assert api.calls == [("p-1", "A site", None, None, None)]
 
 
 def test_empty_specification_rejected_without_calling_api():

@@ -236,6 +236,8 @@ class KantanHttpClient:
     def generate_website_in_editor(
         self, project_id: str, specification: str,
         media_collection_id: str | None = None,
+        blog_collection_id: str | None = None,
+        form_collection_id: str | None = None,
     ) -> dict:
         # The backend proxies to the editor and blocks for the whole multi-turn
         # generation, so this needs a much longer timeout than the default 60s.
@@ -245,6 +247,8 @@ class KantanHttpClient:
             json={
                 "specification": specification,
                 "media_collection_id": media_collection_id,
+                "blog_collection_id": blog_collection_id,
+                "form_collection_id": form_collection_id,
             },
             headers=self._headers(project_id),
             timeout=660.0,

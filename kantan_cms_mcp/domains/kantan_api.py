@@ -118,8 +118,14 @@ class KantanApi(Protocol):
 
     # --- website generation (web editor) -------------------------------------
     def generate_website_in_editor(
-        self, project_id: str, specification: str, media_collection_id: str | None = None
+        self,
+        project_id: str,
+        specification: str,
+        media_collection_id: str | None = None,
+        blog_collection_id: str | None = None,
+        form_collection_id: str | None = None,
     ) -> dict:
         """Generate a whole site from scratch in the Web Editor (backend proxies
-        to the editor; blocks for minutes). Returns {ok, reply, changed, pages}."""
+        to the editor; blocks for minutes). Optional collection ids wire the site
+        to the CMS (media/blog/form). Returns {ok, reply, changed, pages}."""
         ...
